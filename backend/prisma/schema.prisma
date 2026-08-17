@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      String   @default("CUSTOMER")
+  firstName String
+  lastName  String
+  phone     String?
+  avatarUrl String?
+  status    String   @default("ACTIVE")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendorProfile VendorProfile?
+  riderProfile  RiderProfile?
+  orders        Order[]
+  wishlists     WishlistItem[]
+  reviews       Review[]
+}
+
+model VendorProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  
+  storeName   String
+  description String?
+  logoUrl     String?
+  coverUrl    String?
+  address     String?
+  coordinates String? // JSON string
+  
+  businessType String // Food, Fashion, Retail, Agriculture, etc.
+  status      String  @default("PENDING")
+  
+  paystackSubaccount String?
+
+  products    Product[]
+  orders      Order[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RiderProfile {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  
+  vehicleType  String
+  plateNumber  String?
+  isOnline     Boolean  @default(false)
+  currentLocation String? // JSON string
+  
+  status       String   @default("PENDING")
+  deliveries   Order[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  image       String?
+  products    Product[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  vendorId    String
+  vendor      VendorProfile @relation(fields: [vendorId], references: [id])
+  
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  
+  name        String
+  description String
+  price       Float
+  discount    Float    @default(0)
+  inventory   Int      @default(0)
+  unit        String?
+  images      String   // JSON array of strings
+  sku         String?
+  variations  String?  // JSON string
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems  OrderItem[]
+  wishlists   WishlistItem[]
+  reviews     Review[]
+}
+
+model Order {
+  id             String   @id @default(uuid())
+  customerId     String
+  customer       User     @relation(fields: [customerId], references: [id])
+  
+  vendorId       String
+  vendor         VendorProfile @relation(fields: [vendorId], references: [id])
+  
+  riderId        String?
+  rider          RiderProfile? @relation(fields: [riderId], references: [id])
+  
+  subtotal       Float
+  deliveryFee    Float
+  platformFee    Float
+  total          Float
+  
+  status         String   @default("PENDING") // PENDING, ACCEPTED, IN_TRANSIT, DELIVERED, CANCELLED
+  type           String   // DELIVERY, PICKUP
+  
+  deliveryAddress String? // JSON string
+
+  items          OrderItem[]
+  payment        Payment?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  
+  quantity  Int
+  price     Float
+  options   String?  // JSON string
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id])
+  
+  amount        Float
+  reference     String   @unique // Paystack Reference
+  status        String   @default("PENDING") // PENDING, SUCCESS, FAILED
+  splitDetails  String?    // JSON string
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  rating    Int
+  comment   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Enquiry {
+  id        String   @id @default(uuid())
+  email     String
+  subject   String
+  message   String
+  status    String   @default("OPEN")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
