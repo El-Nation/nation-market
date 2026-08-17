@@ -1,69 +1,36 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="layout-container">
+      <header className="navbar">
+        <div className="logo-container">
+          <img src="/logo.png" alt="Nation-Market Logo" className="main-logo" />
+          <span className="portal-badge">ADMIN</span>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <nav className="nav-links">
+          <a href="#" className="nav-link active">Platform Overview</a>
+          <a href="#" className="nav-link">Settings</a>
+        </nav>
+      </header>
+      <main className="main-content">
+        <h1>Platform Administration</h1>
+        <p>Root access level for configuring users, broad categories, and platform analytics.</p>
       </main>
+
+      <style>{`
+        .layout-container { min-height: 100vh; display: flex; flex-direction: column; background: #fafafa; }
+        .navbar { display: flex; align-items: center; justify-content: space-between; padding: 0.2rem 2.5rem; border-bottom: 1px solid #ddd; background: #fff; }
+        .logo-container { display: flex; align-items: center; gap: 1.5rem; margin-left: -1.5rem; }
+        .main-logo { height: 220px; width: auto; object-fit: contain; margin-top: -60px; margin-bottom: -60px; }
+        .portal-badge { background: #d00; color: #fff; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.85rem; font-weight: bold; letter-spacing: 0.5px; }
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-link { text-decoration: none; color: #333; font-weight: 500; font-size: 1rem; transition: color 0.2s; }
+        .nav-link:hover, .nav-link.active { color: #d00; }
+        .main-content { padding: 4rem 2rem; max-width: 1200px; margin: 0 auto; width: 100%; flex: 1; text-align: left; }
+        .main-content h1 { font-size: 2.2rem; color: #111; margin-bottom: 1rem; font-weight: 600; }
+        .main-content p { font-size: 1.1rem; color: #555; }
+      `}</style>
     </div>
   );
 }
