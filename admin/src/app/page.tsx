@@ -22,6 +22,8 @@ export default function AdminDashboard() {
   const [vendors, setVendors] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [riders, setRiders] = useState([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Settings State
@@ -101,11 +103,40 @@ export default function AdminDashboard() {
         setRiders(data.data);
       }
       
+      const prodRes = await fetch('http://localhost:5000/api/admin/products', { headers });
+      if (prodRes.ok) setProducts((await prodRes.json()).data);
+
+      const catRes = await fetch('http://localhost:5000/api/admin/categories', { headers });
+      if (catRes.ok) setCategories((await catRes.json()).data);
+
       setLoading(false);
     } catch (err) {
       console.error('Failed to fetch admin data', err);
       setLoading(false);
     }
+  };
+
+  const handleAddSubcategory = async (categoryId: string, name: string, inputNode: any) => {
+    if (!name.trim()) return;
+    try {
+      const res = await fetch(`${API}/api/admin/subcategories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ categoryId, name })
+      });
+      if ((await res.json()).success) { inputNode.value = ''; fetchAdminData(); }
+    } catch { alert('Subcategory creation failed'); }
+  };
+
+  const handleDeleteSubcategory = async (id: string) => {
+    if (!window.confirm("Delete this Platform Subcategory globally?")) return;
+    try {
+      const res = await fetch(`${API}/api/admin/subcategories/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if ((await res.json()).success) fetchAdminData();
+    } catch { alert('Failed to delete subcategory'); }
   };
 
   const handleLogout = () => {
@@ -431,25 +462,69 @@ export default function AdminDashboard() {
             {activeTab === 'Products' && (
               <div className="tab-pane fade-in">
                 <div className="page-header"><h2>Products</h2><p className="subtitle">Global product overview.</p></div>
-                <div className="empty-state">
-                  <Package size={52} className="empty-icon" />
-                  <h3>No Products Available</h3>
-                  <p>Vendors have not populated products yet.</p>
-                </div>
+                {products.length === 0 ? (
+                  <div className="empty-state">
+                    <Package size={52} className="empty-icon" />
+                    <h3>No Products Available</h3>
+                    <p>Vendors have not populated products yet.</p>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="admin-table">
+                      <thead>
+                        <tr><th>Product Name</th><th>Vendor Store</th><th>Global Category</th><th>Subcategory</th><th>Price</th><th>Stock</th><th>Status</th></tr>
+                      </thead>
+                      <tbody>
+                        {products.map((p: any) => (
+                          <tr key={p.id}>
+                            <td><strong>{p.name}</strong></td>
+                            <td>{p.vendor?.storeName || 'N/A'}</td>
+                            <td><span className="status-badge" style={{ background: '#e0e7ff', color: '#4338ca' }}>{p.category?.name || 'Unassigned'}</span></td>
+                            <td>{p.subcategory?.name || '-'}</td>
+                            <td>₦ {p.price.toLocaleString()}</td>
+                            <td>{p.inventory}</td>
+                            <td><span className={`status-badge ${p.isAvailable ? 'active' : 'suspended'}`}>{p.isAvailable ? 'Listed' : 'Unlisted'}</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
-
-            {/* 7. CATEGORIES */}
+            {/* 7. CATEGORIES & TAXONOMY */}
             {activeTab === 'Categories' && (
               <div className="tab-pane fade-in">
-                <div className="page-header"><h2>Platform Categories</h2><p className="subtitle">Core categories registered for vendors.</p></div>
-                <div className="categories-grid">
-                  {[
-                    'Supermarket & Groceries', 'Fashion & Beauty', 'Electronics & Gadgets', 
-                    'Restaurants & Food', 'Agriculture & Farming', 'Pharmacy & Health', 'Books & Education'
-                  ].map((cat, i) => (
-                    <div key={i} className="cat-card">
-                      <span className="cat-bullet"></span> {cat}
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <h2>Platform Taxonomy</h2>
+                    <p className="subtitle">Core Official Categories & Subcategories.</p>
+                  </div>
+                </div>
+                
+                <div className="taxonomy-grid" style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))' }}>
+                  {categories.map((cat: any) => (
+                    <div key={cat.id} className="settings-box" style={{ padding: '1.25rem' }}>
+                      <h4 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {cat.name}
+                        <span style={{ fontSize: '0.8rem', background: '#e0e7ff', color: '#4338ca', padding: '0.2rem 0.5rem', borderRadius: '12px' }}>{cat.subcategories?.length || 0} Subs</span>
+                      </h4>
+                      <ul style={{ listStyle: 'none', margin: '1rem 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {cat.subcategories?.map((sub: any) => (
+                          <li key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f9fafb', padding: '0.6rem 0.8rem', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                            <span style={{ fontSize: '0.9rem', color: '#374151', fontWeight: 500 }}>{sub.name}</span>
+                            <button onClick={() => handleDeleteSubcategory(sub.id)} style={{ color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={16} /></button>
+                          </li>
+                        ))}
+                      </ul>
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                        <input type="text" placeholder="Add subcategory... (Press Enter to save)" 
+                          style={{ flex: 1, padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.85rem' }} 
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleAddSubcategory(cat.id, e.currentTarget.value, e.currentTarget);
+                          }} 
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>

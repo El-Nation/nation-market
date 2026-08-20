@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../prisma';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
@@ -8,10 +8,6 @@ import nodemailer from 'nodemailer';
 import { generateSecret, verify } from 'otplib';
 import QRCode from 'qrcode';
 
-const adapter = new PrismaBetterSqlite3({
-  url: process.env.DATABASE_URL || 'file:./dev.db'
-});
-const prisma = new PrismaClient({ adapter });
 const JWT_SECRET = process.env.JWT_SECRET || 'NATION_MARKET_SUPER_SECRET_KEY_2026';
 
 const generateToken = (id: string, role: string) => {

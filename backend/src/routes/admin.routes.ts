@@ -3,7 +3,12 @@ import {
   getOverviewStats,
   getVendors,
   getCustomers,
-  getRiders
+  getRiders,
+  getProducts,
+  getCategories,
+  createSubcategory,
+  updateSubcategory,
+  deleteSubcategory
 } from '../controllers/admin.controller';
 import { protect, authorize } from '../middleware/auth.middleware';
 
@@ -16,5 +21,11 @@ router.get('/stats', getOverviewStats);
 router.get('/vendors', getVendors);
 router.get('/customers', getCustomers);
 router.get('/riders', getRiders);
+router.get('/products', getProducts);
+router.get('/categories', getCategories);
+
+router.post('/subcategories', createSubcategory);
+router.put('/subcategories/:id', updateSubcategory);
+router.delete('/subcategories/:id', deleteSubcategory);
 
 export default router;

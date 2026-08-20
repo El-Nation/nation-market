@@ -90,46 +90,64 @@ export default function VendorRegister() {
           
           <div className="business-cards">
             
-            <div className="biz-card" onClick={() => handleCategorySelection('Supermarket')}>
+            <div className="biz-card" onClick={() => handleCategorySelection('Supermarket & Groceries')}>
               <h3>Supermarket & Groceries</h3>
               <p>Groceries, mini marts, beverages, general retail..</p>
               <div className="biz-icon shopping"><ShoppingCart size={48} /></div>
             </div>
 
-            <div className="biz-card" onClick={() => handleCategorySelection('Fashion')}>
+            <div className="biz-card" onClick={() => handleCategorySelection('Fashion & Beauty')}>
               <h3>Fashion & Beauty</h3>
               <p>Clothing, cosmetics, salons, jewelry, boutiques..</p>
               <div className="biz-icon fashion"><Shirt size={48} /></div>
             </div>
 
-            <div className="biz-card" onClick={() => handleCategorySelection('Electronics')}>
+            <div className="biz-card" onClick={() => handleCategorySelection('Electronics & Gadgets')}>
               <h3>Electronics & Gadgets</h3>
               <p>Phones, computers, appliances, tech accessories..</p>
               <div className="biz-icon tech"><Monitor size={48} /></div>
             </div>
 
-            <div className="biz-card" onClick={() => handleCategorySelection('Restaurant')}>
+            <div className="biz-card" onClick={() => handleCategorySelection('Restaurants & Food')}>
               <h3>Restaurants & Food</h3>
               <p>Restaurants, cafés, food trucks, cloud kitchens..</p>
               <div className="biz-icon food"><Utensils size={48} /></div>
             </div>
 
-            <div className="biz-card" onClick={() => handleCategorySelection('Agriculture')}>
+            <div className="biz-card" onClick={() => handleCategorySelection('Agriculture & Farming')}>
               <h3>Agriculture & Farming</h3>
               <p>Farm produce, livestock, seeds, farming tools, fertilizers..</p>
               <div className="biz-icon agric"><Leaf size={48} /></div>
             </div>
 
-            <div className="biz-card" onClick={() => handleCategorySelection('Pharmacy')}>
+            <div className="biz-card" onClick={() => handleCategorySelection('Pharmacy & Health')}>
               <h3>Pharmacy & Health</h3>
               <p>Drugs, skin care, medicine, health equipment, supplements..</p>
               <div className="biz-icon health"><Pill size={48} /></div>
             </div>
 
-            <div className="biz-card" onClick={() => handleCategorySelection('Books')}>
+            <div className="biz-card" onClick={() => handleCategorySelection('Books & Education')}>
               <h3>Books & Education</h3>
               <p>Books, educational materials, stationery, study kits..</p>
               <div className="biz-icon edu"><BookOpen size={48} /></div>
+            </div>
+            
+            <div className="biz-card" onClick={() => handleCategorySelection('Home, Kitchen & Furniture')}>
+              <h3>Home, Kitchen & Furniture</h3>
+              <p>Furniture, decor, tools, home improvement..</p>
+              <div className="biz-icon tech"><Store size={48} /></div>
+            </div>
+            
+            <div className="biz-card" onClick={() => handleCategorySelection('Automotive & Industrial')}>
+              <h3>Automotive & Industrial</h3>
+              <p>Car parts, oil, heavy machinery, generators..</p>
+              <div className="biz-icon agric"><Monitor size={48} /></div>
+            </div>
+            
+            <div className="biz-card" onClick={() => handleCategorySelection('Toys, Kids & Babies')}>
+              <h3>Toys, Kids & Babies</h3>
+              <p>Toys, baby care, maternity, toddlers..</p>
+              <div className="biz-icon shopping"><ShoppingCart size={48} /></div>
             </div>
 
           </div>

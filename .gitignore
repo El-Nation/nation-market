@@ -33,3 +33,16 @@ Thumbs.db
 # Build
 dist/
 coverage/
+
+# Databases
+dev.db
+
+# Backend temp scripts
+backend/check_*.js
+backend/ping_*.js
+backend/fix*.js
+backend/raw_seed.js
+backend/test*.js
+backend/ping.js
+backend/fix.js
+

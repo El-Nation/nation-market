@@ -46,19 +46,38 @@ model VendorProfile {
   storeName   String
   description String?
   logoUrl     String?
+  logoPublicId  String?
   coverUrl    String?
+  coverPublicId String?
   address     String?
   coordinates String? // JSON string
   
   businessType String // Food, Fashion, Retail, Agriculture, etc.
   isRegistered Boolean @default(false)
   status      String  @default("PENDING")
+  openingHours String?
   
   paystackSubaccount String?
 
+  subcategories Subcategory[]
   products    Product[]
   orders      Order[]
 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Subcategory {
+  id          String   @id @default(uuid())
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  
+  name        String
+  slug        String   @unique
+  
+  vendors     VendorProfile[]
+  products    Product[]
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -96,6 +115,7 @@ model Category {
   slug        String   @unique
   image       String?
   products    Product[]
+  subcategories Subcategory[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -109,13 +129,18 @@ model Product {
   categoryId  String
   category    Category @relation(fields: [categoryId], references: [id])
   
+  subcategoryId String?
+  subcategory   Subcategory? @relation(fields: [subcategoryId], references: [id])
+  
   name        String
   description String
   price       Float
   discount    Float    @default(0)
   inventory   Int      @default(0)
+  isAvailable Boolean  @default(true)
   unit        String?
-  images      String   // JSON array of strings
+  images      String   // Cloudinary secure_url
+  imagePublicId String?  // Cloudinary public_id for deletion
   sku         String?
   variations  String?  // JSON string
 

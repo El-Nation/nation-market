@@ -1,10 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../prisma';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import Database from 'better-sqlite3';
 
-const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL || 'file:./dev.db' });
-const prisma = new PrismaClient({ adapter });
 
 export const getOverviewStats = async (req: Request, res: Response) => {
   try {
@@ -85,4 +83,65 @@ export const getRiders = async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
+};
+
+export const getProducts = async (req: Request, res: Response) => {
+  try {
+    // Admin pulls EVERYTHING across all vendors.
+    const products = await prisma.product.findMany({
+      include: { 
+        vendor: { include: { user: true } }, 
+        category: true, 
+        vendorSubcategory: true 
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ success: true, data: products });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getCategories = async (req: Request, res: Response) => {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { name: 'asc' },
+      include: { subcategories: true }
+    });
+    res.json({ success: true, data: categories });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const createSubcategory = async (req: Request, res: Response) => {
+  try {
+    const { name, categoryId } = req.body;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const created = await prisma.subcategory.create({
+      data: { name, slug, categoryId }
+    });
+    res.status(201).json({ success: true, data: created });
+  } catch (error: any) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+export const updateSubcategory = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, categoryId } = req.body;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const updated = await prisma.subcategory.update({
+      where: { id },
+      data: { name, slug, categoryId }
+    });
+    res.json({ success: true, data: updated });
+  } catch (error: any) { res.status(500).json({ success: false, message: error.message }); }
+};
+
+export const deleteSubcategory = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await prisma.subcategory.delete({ where: { id } });
+    res.json({ success: true, message: 'Deleted cleanly' });
+  } catch (error: any) { res.status(500).json({ success: false, message: error.message }); }
 };
