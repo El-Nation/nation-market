@@ -6,6 +6,9 @@ import authRoutes from './routes/auth.routes';
 import vendorRoutes from './routes/vendor.routes';
 import customerRoutes from './routes/customer.routes';
 import adminRoutes from './routes/admin.routes';
+import storefrontRoutes from './routes/storefront.routes';
+import orderRoutes from './routes/order.routes';
+import paymentRoutes from './routes/payment.routes';
 
 dotenv.config();
 
@@ -24,7 +27,10 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/vendor', vendorRoutes);
 app.use('/api/customer', customerRoutes);
+app.use('/api/customer/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/storefront', storefrontRoutes); // Public — no auth required
 
 app.get('/', (req, res) => {
     res.send('Nation-Market Backend API Running Successfully with Cloudinary.');

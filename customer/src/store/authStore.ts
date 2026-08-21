@@ -6,33 +6,50 @@ interface User {
   firstName: string;
   lastName: string;
   role: string;
+  createdAt?: string;
 }
 
 interface AuthState {
   user: User | null;
   token: string | null;
+  initialized: boolean;
+  initAuth: () => void;
   login: (user: User, token: string) => void;
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => {
-  // Ensure we safely map the JWT when the window natively hydrates
-  const isClient = typeof window !== 'undefined';
-  const initialToken = isClient ? localStorage.getItem('jwt_token') : null;
-  const initialUser = isClient && localStorage.getItem('user_data') ? JSON.parse(localStorage.getItem('user_data') as string) : null;
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  token: null,
+  initialized: false,
 
-  return {
-    user: initialUser,
-    token: initialToken,
-    login: (user, token) => {
+  initAuth: () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const token = localStorage.getItem('jwt_token');
+        const userStr = localStorage.getItem('user_data');
+        const user = userStr ? JSON.parse(userStr) : null;
+        set({ token, user, initialized: true });
+      } catch {
+        set({ initialized: true });
+      }
+    }
+  },
+
+  login: (user, token) => {
+    if (typeof window !== 'undefined') {
       localStorage.setItem('jwt_token', token);
       localStorage.setItem('user_data', JSON.stringify(user));
-      set({ user, token });
-    },
-    logout: () => {
+    }
+    set({ user, token, initialized: true });
+  },
+
+  logout: () => {
+    if (typeof window !== 'undefined') {
       localStorage.removeItem('jwt_token');
       localStorage.removeItem('user_data');
-      set({ user: null, token: null });
-    },
-  };
-});
+    }
+    set({ user: null, token: null, initialized: true });
+  },
+}));
+
