@@ -1,20 +1,27 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import Database from 'better-sqlite3';
-
 
 export const getOverviewStats = async (req: Request, res: Response) => {
   try {
     const totalCustomers = await prisma.user.count({ where: { role: 'CUSTOMER' } });
     const totalVendors = await prisma.user.count({ where: { role: 'VENDOR' } });
     const totalRiders = await prisma.user.count({ where: { role: 'RIDER' } });
-    
-    // Once Order model is populated, we would fetch dynamic order logic 
+
     const totalOrders = await prisma.order.count();
-    const activeOrders = await prisma.order.count({ where: { status: 'PROCESSING' } }); // Mock active status
+    const activeOrders = await prisma.order.count({ where: { status: { in: ['PENDING', 'ACCEPTED', 'IN_TRANSIT'] } } });
     const completedOrders = await prisma.order.count({ where: { status: 'DELIVERED' } });
-    
+
+    // Aggregate live revenue and platform charges from successful payments
+    const revenueAgg = await prisma.payment.aggregate({
+      where: { status: 'SUCCESS' },
+      _sum: { amount: true }
+    });
+
+    const platformFeeAgg = await prisma.order.aggregate({
+      where: { payment: { status: 'SUCCESS' } },
+      _sum: { platformFee: true }
+    });
+
     const recentActivity = await prisma.user.findMany({
       take: 6,
       orderBy: { createdAt: 'desc' },
@@ -37,8 +44,8 @@ export const getOverviewStats = async (req: Request, res: Response) => {
         totalOrders,
         activeOrders,
         completedOrders,
-        totalRevenue: 0,
-        platformCharges: 0,
+        totalRevenue: revenueAgg._sum.amount || 0,
+        platformCharges: platformFeeAgg._sum.platformFee || 0,
         recentActivity
       }
     });
@@ -87,16 +94,59 @@ export const getRiders = async (req: Request, res: Response) => {
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    // Admin pulls EVERYTHING across all vendors.
     const products = await prisma.product.findMany({
-      include: { 
-        vendor: { include: { user: true } }, 
-        category: true, 
-        vendorSubcategory: true 
+      include: {
+        vendor: true,
+        category: true,
+        subcategory: true
       },
       orderBy: { createdAt: 'desc' }
     });
     res.json({ success: true, data: products });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getOrders = async (req: Request, res: Response) => {
+  try {
+    const orders = await prisma.order.findMany({
+      include: {
+        customer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        vendor: { select: { id: true, storeName: true, logoUrl: true } },
+        rider: { select: { id: true, vehicleType: true, user: { select: { firstName: true, lastName: true, phone: true } } } },
+        items: { include: { product: { select: { name: true, price: true } } } },
+        payment: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ success: true, data: orders });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getPayments = async (req: Request, res: Response) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      include: {
+        order: {
+          select: {
+            id: true,
+            subtotal: true,
+            deliveryFee: true,
+            platformFee: true,
+            total: true,
+            status: true,
+            type: true,
+            customer: { select: { firstName: true, lastName: true, email: true } },
+            vendor: { select: { storeName: true } }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ success: true, data: payments });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

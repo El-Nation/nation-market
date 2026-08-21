@@ -1,386 +1,486 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useAuthStore } from '../../../store/authStore';
-import { LogOut, Bike, Map, Clock, PackageCheck, Box, Bell, Shield, Wallet } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '../../../store/authStore';
+import {
+  Bike, Package, DollarSign, Power, RefreshCw,
+  MapPin, ChevronRight, LogOut, Clock, CheckCircle, Truck
+} from 'lucide-react';
 
 export default function RiderDashboard() {
-  const { user, token, logout } = useAuthStore();
   const router = useRouter();
-  const [isOnline, setIsOnline] = useState(false);
-  const [activeTab, setActiveTab] = useState('Security Settings');
-
-  // Security Form States
-  const [firstName, setFirstName] = useState(user?.firstName || '');
-  const [lastName, setLastName] = useState(user?.lastName || '');
-  const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState('+234 800 000 0000');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-
-  const [qrCode, setQrCode] = useState('');
-  const [otpToken, setOtpToken] = useState('');
-  const [setupSecret, setSetupSecret] = useState('');
-  const [is2FAEnabled, setIs2FAEnabled] = useState(false); // Can be pulled from backend natively in next stage
+  const { user, token, logout } = useAuthStore();
+  const [authorized, setAuthorized] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState('Hub');
 
-  const handleUpdate = async (endpoint: string, payload: any, successMessage: string) => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert(successMessage);
-        if (endpoint === 'update-password') {
-          setCurrentPassword('');
-          setNewPassword('');
-        }
-      } else {
-        alert(data.message || 'Operation failed');
-      }
-    } catch (e) {
-      alert('Network Error');
-    }
-  };
+  // Rider status
+  const [isOnline, setIsOnline] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
 
-  const generate2FA = async () => {
-    if (is2FAEnabled) {
-      alert('2FA is already enabled on your account.');
-      return;
-    }
-    const res = await fetch(`http://localhost:5000/api/auth/2fa/generate`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (data.success) {
-      setQrCode(data.data.qrCodeUrl);
-      setSetupSecret(data.data.secret);
-    }
-  };
+  // Available deliveries (ACCEPTED orders with no rider yet)
+  const [available, setAvailable] = useState<any[]>([]);
+  const [availableLoading, setAvailableLoading] = useState(false);
 
-  const confirm2FA = async () => {
-    const res = await fetch(`http://localhost:5000/api/auth/2fa/enable`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ token: otpToken })
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert('Two-Factor Authentication Successfully Secured!');
-      setIs2FAEnabled(true);
-      setQrCode('');
-      setOtpToken('');
-    } else {
-      alert(data.message || 'Invalid Code');
-    }
-  };
+  // Active assignment
+  const [activeDelivery, setActiveDelivery] = useState<any>(null);
+  const [activeLoading, setActiveLoading] = useState(false);
 
-  const disable2FA = async () => {
-    if (!window.confirm("Are you sure you want to disable Two-Factor Authentication? Your account will be less secure.")) return;
-    
-    const res = await fetch(`http://localhost:5000/api/auth/2fa/disable`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-    if (data.success) {
-      alert(data.message);
-      setIs2FAEnabled(false);
-    }
-  };
+  const API = 'http://localhost:5000';
 
   useEffect(() => {
     setIsMounted(true);
     if (!token || user?.role !== 'RIDER') {
       window.location.href = '/login';
+    } else {
+      setAuthorized(true);
     }
   }, [token, user]);
 
-  if (!isMounted) return null;
-  if (!token || user?.role !== 'RIDER') return null;
+  const fetchAvailable = useCallback(async () => {
+    setAvailableLoading(true);
+    try {
+      const res = await fetch(`${API}/api/rider/deliveries/available`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const d = await res.json();
+      if (d.success) setAvailable(d.data);
+    } finally { setAvailableLoading(false); }
+  }, [token]);
+
+  const fetchActive = useCallback(async () => {
+    setActiveLoading(true);
+    try {
+      const res = await fetch(`${API}/api/rider/deliveries/active`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const d = await res.json();
+      if (d.success) setActiveDelivery(d.data);
+    } finally { setActiveLoading(false); }
+  }, [token]);
+
+  useEffect(() => {
+    if (!authorized) return;
+    if (activeTab === 'Hub') { fetchAvailable(); }
+    if (activeTab === 'Deliveries') { fetchActive(); }
+  }, [activeTab, authorized, fetchAvailable, fetchActive]);
+
+  const toggleOnline = async () => {
+    setStatusLoading(true);
+    try {
+      const newStatus = !isOnline;
+      const res = await fetch(`${API}/api/rider/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ isOnline: newStatus })
+      });
+      const d = await res.json();
+      if (d.success) setIsOnline(d.data.isOnline);
+      else alert(d.message || 'Status update failed');
+    } finally { setStatusLoading(false); }
+  };
+
+  const claimDelivery = async (orderId: string) => {
+    const res = await fetch(`${API}/api/rider/deliveries/${orderId}/claim`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const d = await res.json();
+    if (d.success) {
+      alert('Delivery claimed! Check your Deliveries tab.');
+      setActiveTab('Deliveries');
+      fetchActive();
+    } else {
+      alert(d.message || 'Could not claim delivery');
+    }
+  };
+
+  const updateDeliveryStatus = async (orderId: string, status: string) => {
+    const res = await fetch(`${API}/api/rider/deliveries/${orderId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status })
+    });
+    const d = await res.json();
+    if (d.success) {
+      fetchActive();
+      if (status === 'DELIVERED') alert('🎉 Delivery completed! Great work.');
+    } else {
+      alert(d.message || 'Status update failed');
+    }
+  };
+
+  if (!isMounted || !authorized) return null;
+
+  const initials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || 'R';
+
+  const parseAddr = (str: string) => {
+    try { return JSON.parse(str || '{}'); } catch { return {}; }
+  };
+
+  const tabs = [
+    { id: 'Hub', icon: Package, label: 'Hub' },
+    { id: 'Deliveries', icon: Truck, label: 'Deliveries' },
+    { id: 'Earnings', icon: DollarSign, label: 'Earnings' },
+  ];
 
   return (
-    <div className="layout-app">
-      <nav className="side-nav">
-        <div className="nav-header">
-          <img src="/logo.png" alt="NATION MARKET" className="dashboard-logo" />
+    <div className="rider-layout">
+      {/* Header */}
+      <header className="rider-header">
+        <img src="/logo.png" alt="Nation Market" className="rider-logo" />
+        <div className="header-right">
+          {/* Online Toggle */}
+          <button
+            className={`status-toggle ${isOnline ? 'online' : 'offline'}`}
+            onClick={toggleOnline}
+            disabled={statusLoading}
+          >
+            <Power size={16} />
+            {statusLoading ? 'Updating...' : isOnline ? 'Online' : 'Offline'}
+          </button>
+          <div className="rider-avatar" onClick={() => logout()}>{initials}</div>
         </div>
-        <div className="nav-menu">
-          <button className={`nav-item ${activeTab === 'Hub' ? 'active' : ''}`} onClick={() => setActiveTab('Hub')}><Bike size={20} /> Hub</button>
-          <button className={`nav-item ${activeTab === 'Earnings' ? 'active' : ''}`} onClick={() => setActiveTab('Earnings')}><Wallet size={20} /> Earnings</button>
-          <button className={`nav-item ${activeTab === 'Deliveries' ? 'active' : ''}`} onClick={() => setActiveTab('Deliveries')}><PackageCheck size={20} /> Deliveries</button>
-          <button className={`nav-item ${activeTab === 'Notifications' ? 'active' : ''}`} onClick={() => setActiveTab('Notifications')}><Bell size={20} /> Notifications</button>
-          <button className={`nav-item ${activeTab === 'Security Settings' ? 'active' : ''}`} onClick={() => setActiveTab('Security Settings')}><Shield size={20} /> Security Settings</button>
-        </div>
-        <div className="nav-footer">
-          <button className="logout-button" onClick={logout}><LogOut size={20} /> Logout</button>
-        </div>
+      </header>
+
+      {/* Status Banner */}
+      <div className={`status-banner ${isOnline ? 'online' : 'offline'}`}>
+        {isOnline
+          ? '🟢 You are ONLINE — Available orders in your zone will appear below.'
+          : '🔴 You are OFFLINE — Go online to start receiving delivery assignments.'}
+      </div>
+
+      {/* Tab Navigation */}
+      <nav className="rider-tabs">
+        {tabs.map(({ id, icon: Icon, label }) => (
+          <button key={id} className={`rider-tab ${activeTab === id ? 'active' : ''}`} onClick={() => setActiveTab(id)}>
+            <Icon size={18} />
+            {label}
+          </button>
+        ))}
       </nav>
 
-      <main className="main-zone">
-        <header className="top-header">
-          <div>
-            <h1>Welcome, {user.firstName || 'Rider'} 👋🏽</h1>
-            <p className="subtitle">Lagos Delivery Sector</p>
-          </div>
-          
-          <div className="availability-box">
-             <span className="availability-text">Availability:</span>
-             <label className="toggle-switch">
-               <input type="checkbox" checked={isOnline} onChange={e => setIsOnline(e.target.checked)} />
-               <span className="slider"></span>
-             </label>
-             <span className={`status-badge ${isOnline ? 'online' : 'offline'}`}>{isOnline ? '🟢 Online' : '🔴 Offline'}</span>
-          </div>
-        </header>
+      <main className="rider-main">
 
+        {/* ── HUB: Available Deliveries ── */}
         {activeTab === 'Hub' && (
-          <div className="fade-in">
-            <section className="stage-9-alert">
-               <Map size={32} color="#005b9f" />
-               <div className="alert-content">
-                  <h3>Live Dispatch Node Standby</h3>
-                  <p>Stage 9 & 11 integrations will permanently bind this hub to the physical physical GPS delivery map architectures connecting Customer orders natively here.</p>
-               </div>
-            </section>
-
-            <div className="metrics-grid">
-              <div className="metric-card"><h4>Today's Earnings</h4><div className="metric-val">₦ 0.00</div></div>
-              <div className="metric-card"><h4>Live Assignments</h4><div className="metric-val">0</div></div>
-              <div className="metric-card"><h4>Completed Hand-offs</h4><div className="metric-val">0</div></div>
-              <div className="metric-card"><h4>Hours Online</h4><div className="metric-val">0.0<small>h</small></div></div>
+          <div className="tab-section fade-in">
+            <div className="section-header">
+              <div>
+                <h2>Available Deliveries</h2>
+                <p className="subtitle">Accepted orders in your area waiting for a rider.</p>
+              </div>
+              <button className="icon-text-btn" onClick={fetchAvailable} disabled={availableLoading}>
+                <RefreshCw size={15} /> Refresh
+              </button>
             </div>
-          </div>
-        )}
 
-        {activeTab === 'Earnings' && (
-          <div className="tab-pane fade-in">
-            <h2>Your Earnings</h2>
-            <p>Full breakdown of your delivery commissions will appear here.</p>
-            <div className="metrics-grid mt-2">
-              <div className="metric-card"><h4>Wallet Balance</h4><div className="metric-val">₦ 0.00</div></div>
-              <div className="metric-card"><h4>Pending Clearance</h4><div className="metric-val">₦ 0.00</div></div>
-            </div>
-          </div>
-        )}
+            {!isOnline && (
+              <div className="info-card amber">
+                <Power size={20} />
+                <span>Go <strong>online</strong> first to claim deliveries.</span>
+              </div>
+            )}
 
-        {activeTab === 'Deliveries' && (
-          <div className="tab-pane fade-in">
-            <h2>Delivery History</h2>
-            <div className="empty-state">No deliveries completed yet. Go online to receive assignments!</div>
-          </div>
-        )}
+            {availableLoading && <div className="loading-text">Finding deliveries near you...</div>}
 
-        {activeTab === 'Notifications' && (
-          <div className="tab-pane fade-in">
-            <h2>System Notifications</h2>
-            <div className="empty-state">You are all caught up. No new alerts.</div>
-          </div>
-        )}
+            {!availableLoading && available.length === 0 && (
+              <div className="empty-state">
+                <Package size={48} className="empty-icon" />
+                <h3>No Available Deliveries</h3>
+                <p>There are no accepted orders ready for pickup right now. Check back shortly.</p>
+              </div>
+            )}
 
-        {activeTab === 'Security Settings' && (
-          <div className="tab-pane fade-in">
-            <h2>Security & Account</h2>
-            <p>Manage your account credentials, notifications, and structural security.</p>
-            
-            <div className="settings-grid">
-               <div className="settings-box">
-                  <h4>Personal Details</h4>
-                  <div className="form-group">
-                    <label>First Name</label>
-                    <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} />
+            {!availableLoading && available.map(order => {
+              const dropAddr = parseAddr(order.deliveryAddress);
+              const itemNames = order.items?.map((i: any) => i.product?.name).join(', ');
+              return (
+                <div key={order.id} className="delivery-card">
+                  <div className="delivery-card-header">
+                    <div>
+                      <strong>{order.vendor?.storeName}</strong>
+                      <span className="delivery-meta">#{order.id.slice(0, 8)} · ₦{order.total?.toLocaleString()}</span>
+                    </div>
+                    <span className="badge accepted">ACCEPTED</span>
                   </div>
-                  <div className="form-group mt-2">
-                    <label>Last Name</label>
-                    <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} />
-                  </div>
-                  <button className="settings-btn mt-2 border-primary" onClick={() => handleUpdate('update-details', { firstName, lastName }, 'Profile updated successfully!')}>Update Details</button>
-               </div>
 
-               <div className="settings-box">
-                  <h4>Contact Info</h4>
-                  <div className="form-group">
-                    <label>Email Address</label>
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} />
-                  </div>
-                  <div className="form-group mt-2">
-                    <label>Phone Number</label>
-                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Enter phone" />
-                  </div>
-                  <button className="settings-btn mt-2 border-primary" onClick={() => handleUpdate('update-contact', { email, phone }, 'Contact info updated successfully!')}>Update Contact</button>
-               </div>
-
-               <div className="settings-box">
-                  <h4>Change Password</h4>
-                  <div className="form-group">
-                    <label>Current Password</label>
-                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="••••••••" />
-                  </div>
-                  <div className="form-group mt-2">
-                    <label>New Password</label>
-                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="••••••••" />
-                  </div>
-                  <button className="settings-btn mt-2 border-primary" onClick={() => handleUpdate('update-password', { currentPassword, newPassword }, 'Password changed securely!')}>Update Password</button>
-               </div>
-
-               <div className="settings-box">
-                  <h4>Two-Factor Authentication (2FA)</h4>
-                  <p className="text-sm">Add an extra layer of security to your account requiring a confirmation code.</p>
-                  
-                  {!qrCode && !is2FAEnabled && (
-                    <>
-                      <label className="toggle-switch mt-2">
-                        <input type="checkbox" onChange={generate2FA} checked={is2FAEnabled} />
-                        <span className="slider"></span>
-                      </label>
-                      <span className="ml-2 font-bold">{is2FAEnabled ? 'Enabled' : 'Disabled'}</span>
-                    </>
-                  )}
-
-                  {is2FAEnabled && (
-                     <div className="p-3 bg-green-50 text-green-700 font-bold border rounded mt-2 flex justify-between items-center">
-                        <span>2FA is Actively Secured 🛡️</span>
-                        <button onClick={disable2FA} className="text-red-500 text-sm underline cursor-pointer bg-transparent border-none">Disable</button>
-                     </div>
-                  )}
-
-                  {qrCode && (
-                    <div className="qr-container mt-2">
-                      <p className="font-bold text-sm mb-1 text-center">Scan this QR Code in Google Authenticator</p>
-                      <img src={qrCode} alt="2FA QR Code" className="mx-auto block border rounded p-1 mb-2 bg-white" />
-                      
-                      <div className="text-center mb-3">
-                        <p className="text-sm font-bold text-gray-500">OR ENTER MANUAL KEY:</p>
-                        <code className="bg-gray-100 p-2 rounded block tracking-widest text-primary font-bold mt-1 text-lg">
-                          {setupSecret}
-                        </code>
+                  <div className="addr-row">
+                    <div className="addr-block pickup">
+                      <span className="addr-label">📦 Pickup (Store)</span>
+                      <span>{order.vendor?.address || 'Store Address on file'}</span>
+                    </div>
+                    {dropAddr?.line1 && (
+                      <div className="addr-block drop">
+                        <span className="addr-label">📍 Drop-off</span>
+                        <span>{dropAddr.line1}, {dropAddr.city}</span>
                       </div>
+                    )}
+                  </div>
 
-                      <input 
-                        type="text" 
-                        value={otpToken} 
-                        onChange={e => setOtpToken(e.target.value)} 
-                        placeholder="Enter 6-digit code" 
-                        className="w-full text-center tracking-widest text-lg py-2 border rounded"
-                        maxLength={6}
-                      />
-                      <button className="settings-btn border-primary mt-2 w-full" onClick={confirm2FA}>Verify & Enable</button>
+                  {itemNames && <p className="items-summary">Items: {itemNames}</p>}
+
+                  <div className="delivery-card-footer">
+                    <span className="earnings-chip">+₦{(order.deliveryFee || 500).toLocaleString()} delivery fee</span>
+                    <button
+                      className="claim-btn"
+                      disabled={!isOnline}
+                      onClick={() => claimDelivery(order.id)}
+                    >
+                      Claim Delivery <ChevronRight size={15} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── DELIVERIES: Active Assignment ── */}
+        {activeTab === 'Deliveries' && (
+          <div className="tab-section fade-in">
+            <div className="section-header">
+              <div>
+                <h2>Active Delivery</h2>
+                <p className="subtitle">Your current assignment. Update the status as you progress.</p>
+              </div>
+              <button className="icon-text-btn" onClick={fetchActive} disabled={activeLoading}>
+                <RefreshCw size={15} /> Refresh
+              </button>
+            </div>
+
+            {activeLoading && <div className="loading-text">Loading your assignment...</div>}
+
+            {!activeLoading && !activeDelivery && (
+              <div className="empty-state">
+                <Truck size={48} className="empty-icon" />
+                <h3>No Active Delivery</h3>
+                <p>You don't have any active package assignment. Claim one from the Hub tab.</p>
+                <button className="primary-btn" onClick={() => setActiveTab('Hub')}><Package size={16} /> Browse Hub</button>
+              </div>
+            )}
+
+            {!activeLoading && activeDelivery && (() => {
+              const dropAddr = parseAddr(activeDelivery.deliveryAddress);
+              const stages = [
+                { key: 'ACCEPTED', label: 'Picked Up', icon: '📦', action: 'Mark Picked Up', next: 'IN_TRANSIT', color: '#7c3aed' },
+                { key: 'IN_TRANSIT', label: 'In Transit', icon: '🛵', action: 'Mark Delivered', next: 'DELIVERED', color: '#16a34a' },
+                { key: 'DELIVERED', label: 'Delivered!', icon: '✅', action: null, next: null, color: '#15803d' },
+              ];
+              const currentStage = stages.find(s => s.key === activeDelivery.status);
+              const stageIdx = stages.findIndex(s => s.key === activeDelivery.status);
+
+              return (
+                <div className="active-delivery-card">
+                  {/* Store Info */}
+                  <div className="active-card-header">
+                    <div>
+                      <strong style={{ fontSize: '1.15rem', color: '#111827' }}>{activeDelivery.vendor?.storeName}</strong>
+                      <span style={{ display: 'block', fontSize: '0.82rem', color: '#6b7280', marginTop: '0.15rem' }}>
+                        #{activeDelivery.id.slice(0, 8)} · {activeDelivery.items?.length} item(s) · ₦{activeDelivery.total?.toLocaleString()}
+                      </span>
+                    </div>
+                    <span className={`badge ${activeDelivery.status === 'IN_TRANSIT' ? 'transit' : activeDelivery.status === 'DELIVERED' ? 'delivered' : 'accepted'}`}>
+                      {activeDelivery.status === 'IN_TRANSIT' ? 'In Transit' : activeDelivery.status === 'ACCEPTED' ? 'Accepted' : 'Delivered'}
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="progress-track">
+                    {stages.map((s, i) => (
+                      <div key={s.key} className="progress-step">
+                        <div className={`progress-dot ${i <= stageIdx ? 'done' : ''} ${i === stageIdx ? 'active' : ''}`}>
+                          {s.icon}
+                        </div>
+                        <span className={`progress-label ${i === stageIdx ? 'active' : ''}`}>{s.label}</span>
+                        {i < stages.length - 1 && (
+                          <div className={`progress-line ${i < stageIdx ? 'done' : ''}`} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Addresses */}
+                  <div className="addr-row">
+                    <div className="addr-block pickup">
+                      <span className="addr-label">📦 Pickup Store</span>
+                      <span>{activeDelivery.vendor?.address || 'On file at store'}</span>
+                    </div>
+                    {dropAddr?.line1 && (
+                      <div className="addr-block drop">
+                        <span className="addr-label">📍 Deliver To</span>
+                        <span>{dropAddr.line1}{dropAddr.line2 ? `, ${dropAddr.line2}` : ''}, {dropAddr.city}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Customer Info */}
+                  {activeDelivery.customer && (
+                    <div className="customer-info-row">
+                      <span>👤 {activeDelivery.customer.firstName} {activeDelivery.customer.lastName}</span>
+                      {activeDelivery.customer.phone && <span>📞 {activeDelivery.customer.phone}</span>}
                     </div>
                   )}
-               </div>
+
+                  {/* Items */}
+                  <div className="items-list">
+                    {activeDelivery.items?.map((item: any) => (
+                      <div key={item.id} className="item-row">
+                        <span>{item.product?.name} × {item.quantity}</span>
+                        <span>₦{(item.price * item.quantity).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Action Button */}
+                  {currentStage?.action && currentStage.next && (
+                    <button
+                      className="action-btn"
+                      style={{ background: currentStage.color }}
+                      onClick={() => updateDeliveryStatus(activeDelivery.id, currentStage.next!)}
+                    >
+                      {currentStage.action}
+                    </button>
+                  )}
+
+                  {activeDelivery.status === 'DELIVERED' && (
+                    <div className="success-banner">
+                      🎉 Delivery completed! Visit the Hub to pick up your next assignment.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ── EARNINGS ── */}
+        {activeTab === 'Earnings' && (
+          <div className="tab-section fade-in">
+            <div className="section-header">
+              <div>
+                <h2>Earnings</h2>
+                <p className="subtitle">Your delivery earnings summary.</p>
+              </div>
+            </div>
+            <div className="empty-state">
+              <DollarSign size={48} className="empty-icon" />
+              <h3>No Earnings Yet</h3>
+              <p>Complete deliveries to build your earning history.</p>
+              <button className="primary-btn" onClick={() => setActiveTab('Hub')}><Package size={16} /> Find Deliveries</button>
             </div>
           </div>
         )}
+
       </main>
 
       <style>{`
-        .layout-app { display: flex; min-height: 100vh; background: #f3f4f6; font-family: -apple-system, sans-serif; }
-        
-        .side-nav { width: 280px; background: white; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; }
-        .nav-header { padding: 1.5rem; border-bottom: 1px solid #e5e7eb; text-align: center; }
-        .dashboard-logo { height: 90px; object-fit: contain; margin: -30px 0; }
-        
-        .nav-menu { flex: 1; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
-        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem; color: #4b5563; text-decoration: none; border-radius: 8px; font-weight: 500; transition: all 0.2s; border: none; background: transparent; cursor: pointer; width: 100%; text-align: left; font-size: 1rem; font-family: inherit; }
-        .nav-item:hover { background: #f3f4f6; color: #111827; }
-        .nav-item.active { background: #eff6ff; color: #005b9f; }
-        
-        .nav-footer { padding: 1.5rem; padding-bottom: 3.5rem; border-top: 1px solid #e5e7eb; }
-        .logout-button { display: flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; padding: 0.85rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .logout-button:hover { background: #fee2e2; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f9fafb; }
+        .rider-layout { display: flex; flex-direction: column; min-height: 100vh; }
 
-        .main-zone { flex: 1; padding: 2.5rem 3rem; overflow-y: auto; }
-        
-        .top-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; }
-        .top-header h1 { font-size: 2rem; margin: 0 0 0.25rem 0; color: #111827; font-weight: 700; letter-spacing: -0.5px; }
-        .subtitle { margin: 0; color: #6b7280; font-size: 1.05rem; }
-        
-        .availability-box { background: white; padding: 1rem 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); display: flex; align-items: center; gap: 1rem; border: 1px solid #e5e7eb; }
-        .availability-text { font-weight: 600; color: #374151; font-size: 0.95rem; }
-        .status-badge { font-size: 0.85rem; font-weight: 700; padding: 0.35rem 0.75rem; border-radius: 20px; }
-        .status-badge.online { background: #dcfce7; color: #166534; }
-        .status-badge.offline { background: #f3f4f6; color: #4b5563; }
-        
-        /* Toggle Switch */
-        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; }
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #d1d5db; border-radius: 24px; transition: .3s; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: .3s; }
-        input:checked + .slider { background-color: #16a34a; }
-        input:checked + .slider:before { transform: translateX(20px); }
+        /* Header */
+        .rider-header { background: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 40; }
+        .rider-logo { height: 50px; object-fit: contain; }
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+        .rider-avatar { width: 36px; height: 36px; border-radius: 50%; background: #7c3aed; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
 
-        .stage-9-alert { background: #eff6ff; border: 1px dashed #93c5fd; padding: 2rem; border-radius: 12px; display: flex; gap: 1.5rem; align-items: flex-start; margin-bottom: 2.5rem; }
-        .alert-content h3 { margin: 0 0 0.5rem 0; color: #1e3a8a; font-size: 1.15rem; }
-        .alert-content p { margin: 0; color: #1e40af; font-size: 0.95rem; line-height: 1.5; }
+        /* Status toggle */
+        .status-toggle { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 20px; border: none; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: all 0.25s; }
+        .status-toggle.online { background: #dcfce7; color: #15803d; }
+        .status-toggle.offline { background: #fee2e2; color: #b91c1c; }
+        .status-toggle:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
-        .metric-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #e5e7eb; transition: transform 0.2s; }
-        .metric-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px rgba(0,0,0,0.05); }
-        .metric-card h4 { margin: 0 0 0.75rem 0; font-size: 0.9rem; color: #6b7280; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-        .metric-val { font-size: 2rem; font-weight: 700; color: #111827; letter-spacing: -0.5px; }
-        .metric-val small { font-size: 1.1rem; color: #9ca3af; margin-left: 0.25rem; font-weight: 500; }
-        
-        .tab-pane { padding: 1rem 0; }
-        .tab-pane h2 { margin-top: 0; color: #111827; }
-        .empty-state { padding: 3rem; text-align: center; color: #6b7280; background: white; border-radius: 12px; border: 1px dashed #d1d5db; margin-top: 1rem; font-weight: 500; }
-        .mt-2 { margin-top: 1.5rem; }
-        .settings-btn { padding: 0.75rem 1.5rem; background: white; border: 1px solid #d1d5db; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .settings-btn:hover { background: #f3f4f6; color: #005b9f; border-color: #005b9f; }
-        .fade-in { animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        /* Status banner */
+        .status-banner { padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 600; text-align: center; }
+        .status-banner.online { background: #f0fdf4; color: #15803d; border-bottom: 1px solid #bbf7d0; }
+        .status-banner.offline { background: #fef2f2; color: #991b1b; border-bottom: 1px solid #fecaca; }
 
-        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem; }
-        .settings-box { background: white; padding: 2rem; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .settings-box h4 { margin: 0 0 1.5rem 0; font-size: 1.1rem; color: #111827; border-bottom: 2px solid #f3f4f6; padding-bottom: 0.5rem; }
-        .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        .form-group label { font-size: 0.85rem; font-weight: 700; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px; }
-        .form-group input { padding: 0.85rem 1rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; outline: none; transition: border-color 0.2s; }
-        .form-group input:focus { border-color: #005b9f; box-shadow: 0 0 0 3px rgba(0,91,159,0.1); }
-        .border-primary { border: 1px solid #005b9f; color: #005b9f; width: 100%; transition: all 0.2s; }
-        .border-primary:hover { background: #005b9f; color: white; }
-        .text-sm { font-size: 0.95rem; line-height: 1.5; color: #6b7280; }
-        .ml-2 { margin-left: 0.75rem; vertical-align: super; }
-        .font-bold { font-weight: 600; color: #374151; }
-        .text-center { text-align: center; }
-        .mx-auto { margin-left: auto; margin-right: auto; }
-        .block { display: block; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-3 { margin-bottom: 0.75rem; }
-        .mb-1 { margin-bottom: 0.25rem; }
-        .mt-1 { margin-top: 0.25rem; }
-        .w-full { width: 100%; }
-        .tracking-widest { letter-spacing: 0.1em; }
-        .text-lg { font-size: 1.125rem; }
-        .text-primary { color: #f5b70d; }
-        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-        .p-2 { padding: 0.5rem; }
-        .bg-white { background-color: #fff; }
-        .bg-gray-100 { background-color: #f3f4f6; }
-        .text-gray-500 { color: #6b7280; }
-        .p-1 { padding: 0.25rem; }
-        .p-3 { padding: 0.75rem; }
-        .rounded { border-radius: 0.25rem; }
-        .border { border-width: 1px; border-style: solid; border-color: #e5e7eb; }
-        .border-none { border: none; }
-        .bg-transparent { background: transparent; }
-        .cursor-pointer { cursor: pointer; }
-        .underline { text-decoration: underline; }
-        .text-red-500 { color: #ef4444; }
-        .flex { display: flex; }
-        .justify-between { justify-content: space-between; }
-        .items-center { align-items: center; }
-        .bg-green-50 { background-color: #f0fdf4; }
-        .text-green-700 { color: #15803d; }
+        /* Tabs */
+        .rider-tabs { display: flex; background: white; border-bottom: 1px solid #e5e7eb; }
+        .rider-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; border: none; background: transparent; color: #6b7280; font-size: 0.9rem; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .rider-tab.active { color: #7c3aed; border-bottom-color: #7c3aed; background: #faf5ff; }
+        .rider-tab:hover { background: #f9fafb; color: #374151; }
 
-        @media (max-width: 1024px) { 
-           .metrics-grid { grid-template-columns: repeat(2, 1fr); } 
-           .settings-grid { grid-template-columns: 1fr; } 
+        /* Main */
+        .rider-main { flex: 1; max-width: 720px; margin: 0 auto; width: 100%; }
+        .tab-section { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+        .section-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; }
+        .section-header h2 { margin: 0 0 0.25rem; font-size: 1.4rem; font-weight: 700; color: #111827; }
+        .subtitle { margin: 0; font-size: 0.9rem; color: #6b7280; }
+
+        .icon-text-btn { display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.9rem; border: 1px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: #374151; transition: 0.2s; }
+        .icon-text-btn:hover { background: #f9fafb; }
+        .icon-text-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .loading-text { text-align: center; padding: 2rem; color: #6b7280; font-size: 0.95rem; }
+        .empty-state { text-align: center; padding: 3rem 1.5rem; background: white; border-radius: 16px; border: 1px dashed #d1d5db; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+        .empty-icon { color: #d1d5db; margin-bottom: 0.5rem; }
+        .empty-state h3 { margin: 0; font-size: 1.2rem; color: #111827; }
+        .empty-state p { margin: 0; font-size: 0.9rem; color: #6b7280; max-width: 300px; }
+
+        .info-card { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; border-radius: 12px; font-size: 0.9rem; }
+        .info-card.amber { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+        /* Delivery Card (Hub) */
+        .delivery-card { background: white; border-radius: 16px; border: 1px solid #e5e7eb; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .delivery-card-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; }
+        .delivery-card-header strong { font-size: 1rem; color: #111827; display: block; margin-bottom: 0.2rem; }
+        .delivery-meta { font-size: 0.8rem; color: #6b7280; }
+        .addr-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .addr-block { flex: 1; min-width: 160px; padding: 0.65rem 0.9rem; border-radius: 10px; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; }
+        .addr-block.pickup { background: #f0fdf4; color: #374151; }
+        .addr-block.drop { background: #faf5ff; color: #374151; }
+        .addr-label { font-weight: 700; font-size: 0.77rem; text-transform: uppercase; letter-spacing: 0.3px; color: #6b7280; }
+        .items-summary { margin: 0; font-size: 0.82rem; color: #6b7280; font-style: italic; }
+        .delivery-card-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #f3f4f6; }
+        .earnings-chip { background: #f0fdf4; color: #15803d; padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+        .claim-btn { display: flex; align-items: center; gap: 0.3rem; background: #7c3aed; color: white; border: none; padding: 0.6rem 1.1rem; border-radius: 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: 0.2s; }
+        .claim-btn:hover { background: #6d28d9; }
+        .claim-btn:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; }
+
+        /* Active Delivery Card */
+        .active-delivery-card { background: white; border-radius: 16px; border: 1px solid #e5e7eb; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .active-card-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; }
+
+        /* Badges */
+        .badge { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+        .badge.accepted { background: #dbeafe; color: #1e40af; }
+        .badge.transit { background: #ede9fe; color: #5b21b6; }
+        .badge.delivered { background: #dcfce7; color: #15803d; }
+
+        /* Progress Track */
+        .progress-track { display: flex; align-items: flex-start; justify-content: space-between; position: relative; }
+        .progress-step { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .progress-dot { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: 3px solid #e5e7eb; background: #f3f4f6; z-index: 1; transition: all 0.3s; }
+        .progress-dot.done { border-color: #7c3aed; background: #f3e8ff; }
+        .progress-dot.active { border-color: #7c3aed; background: #7c3aed; }
+        .progress-line { position: absolute; top: 19px; left: 50%; width: 100%; height: 3px; background: #e5e7eb; z-index: 0; }
+        .progress-line.done { background: #7c3aed; }
+        .progress-label { font-size: 0.72rem; font-weight: 600; color: #9ca3af; margin-top: 0.4rem; text-align: center; }
+        .progress-label.active { color: #7c3aed; }
+
+        .customer-info-row { display: flex; gap: 1.25rem; font-size: 0.88rem; color: #374151; flex-wrap: wrap; }
+        .items-list { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.85rem 1rem; background: #f9fafb; border-radius: 10px; }
+        .item-row { display: flex; justify-content: space-between; font-size: 0.88rem; color: #374151; }
+        .item-row span:last-child { font-weight: 600; color: #111827; }
+        .action-btn { width: 100%; padding: 0.9rem; border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: opacity 0.2s; }
+        .action-btn:hover { opacity: 0.9; }
+        .success-banner { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: 12px; padding: 1rem 1.25rem; text-align: center; font-weight: 600; font-size: 0.92rem; }
+
+        /* Buttons */
+        .primary-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #7c3aed; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.95rem; cursor: pointer; margin-top: 1rem; transition: 0.2s; }
+        .primary-btn:hover { background: #6d28d9; }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+        @media (max-width: 640px) {
+          .tab-section { padding: 1rem; }
+          .progress-label { display: none; }
+          .addr-row { flex-direction: column; }
         }
       `}</style>
     </div>

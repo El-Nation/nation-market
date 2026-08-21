@@ -6,6 +6,8 @@ import {
   getRiders,
   getProducts,
   getCategories,
+  getOrders,
+  getPayments,
   createSubcategory,
   updateSubcategory,
   deleteSubcategory
@@ -23,6 +25,8 @@ router.get('/customers', getCustomers);
 router.get('/riders', getRiders);
 router.get('/products', getProducts);
 router.get('/categories', getCategories);
+router.get('/orders', getOrders);
+router.get('/payments', getPayments);
 
 router.post('/subcategories', createSubcategory);
 router.put('/subcategories/:id', updateSubcategory);

@@ -9,6 +9,7 @@ import adminRoutes from './routes/admin.routes';
 import storefrontRoutes from './routes/storefront.routes';
 import orderRoutes from './routes/order.routes';
 import paymentRoutes from './routes/payment.routes';
+import riderRoutes from './routes/rider.routes';
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use('/api/vendor', vendorRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/customer/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/rider', riderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/storefront', storefrontRoutes); // Public — no auth required
 

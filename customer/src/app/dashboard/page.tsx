@@ -38,6 +38,9 @@ export default function CustomerDashboard() {
 
   // Orders state
   const [orderFilter, setOrderFilter] = useState<'Ongoing' | 'Completed' | 'Cancelled'>('Ongoing');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   // Notifications state
   const [notifFilter, setNotifFilter] = useState<'All' | 'Orders' | 'Payments' | 'Delivery' | 'Account'>('All');
@@ -68,7 +71,19 @@ export default function CustomerDashboard() {
   // ── Fetch addresses on tab switch
   useEffect(() => {
     if (activeTab === 'Addresses' && authorized) fetchAddresses();
+    if (activeTab === 'Orders' && authorized) fetchOrders();
   }, [activeTab, authorized]);
+
+  const fetchOrders = async () => {
+    setOrdersLoading(true);
+    try {
+      const res = await fetch(`${API}/api/customer/orders`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) setOrders(data.data);
+    } finally { setOrdersLoading(false); }
+  };
 
   const fetchAddresses = async () => {
     setAddressLoading(true);
@@ -272,20 +287,140 @@ export default function CustomerDashboard() {
                 </button>
               ))}
             </div>
-            <div className="empty-state">
-              <ShoppingBag size={52} className="empty-icon" />
-              <h3>No {orderFilter.toLowerCase()} orders</h3>
-              <p>
-                {orderFilter === 'Ongoing' && 'You have no active orders right now.'}
-                {orderFilter === 'Completed' && 'Your completed orders will appear here.'}
-                {orderFilter === 'Cancelled' && 'No cancelled orders on record.'}
-              </p>
-              {orderFilter === 'Ongoing' && (
-                <button className="primary-btn mt-2" onClick={() => router.push('/')}>
-                  <ShoppingBag size={16} /> Start Shopping
-                </button>
-              )}
-            </div>
+
+            {ordersLoading && <div className="loading-text">Loading your orders...</div>}
+
+            {!ordersLoading && (() => {
+              const filtered = orders.filter(o => {
+                if (orderFilter === 'Ongoing') return ['PENDING', 'ACCEPTED', 'IN_TRANSIT'].includes(o.status);
+                if (orderFilter === 'Completed') return o.status === 'DELIVERED';
+                return o.status === 'CANCELLED';
+              });
+
+              if (filtered.length === 0) return (
+                <div className="empty-state">
+                  <ShoppingBag size={52} className="empty-icon" />
+                  <h3>No {orderFilter.toLowerCase()} orders</h3>
+                  <p>{orderFilter === 'Ongoing' ? 'You have no active orders right now.' : orderFilter === 'Completed' ? 'Your completed orders will appear here.' : 'No cancelled orders on record.'}</p>
+                  {orderFilter === 'Ongoing' && <button className="primary-btn mt-2" onClick={() => router.push('/')}><ShoppingBag size={16} /> Start Shopping</button>}
+                </div>
+              );
+
+              const timelineStages = [
+                { key: 'PENDING', label: 'Order Placed', icon: '📋' },
+                { key: 'ACCEPTED', label: 'Preparing', icon: '👨‍🍳' },
+                { key: 'IN_TRANSIT', label: 'Dispatched', icon: '🛵' },
+                { key: 'DELIVERED', label: 'Delivered', icon: '✅' },
+              ];
+              const statusOrder = ['PENDING', 'ACCEPTED', 'IN_TRANSIT', 'DELIVERED'];
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {filtered.map(order => {
+                    const currentStageIdx = statusOrder.indexOf(order.status);
+                    const isExpanded = expandedOrder === order.id;
+                    const deliveryAddr = (() => { try { return JSON.parse(order.deliveryAddress || '{}'); } catch { return {}; } })();
+                    const sc: Record<string, { bg: string; color: string }> = {
+                      PENDING:    { bg: '#fef3c7', color: '#92400e' },
+                      ACCEPTED:   { bg: '#dbeafe', color: '#1e40af' },
+                      IN_TRANSIT: { bg: '#ede9fe', color: '#5b21b6' },
+                      DELIVERED:  { bg: '#dcfce7', color: '#15803d' },
+                      CANCELLED:  { bg: '#fee2e2', color: '#991b1b' },
+                    };
+                    const badge = sc[order.status] || { bg: '#f3f4f6', color: '#374151' };
+
+                    return (
+                      <div key={order.id} style={{ background: 'white', borderRadius: '16px', border: '1px solid #e5e7eb', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        {/* Order Header */}
+                        <div style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', cursor: 'pointer', borderBottom: isExpanded ? '1px solid #f3f4f6' : 'none' }} onClick={() => setExpandedOrder(isExpanded ? null : order.id)}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                              <strong style={{ color: '#111827', fontSize: '1rem' }}>{order.vendor?.storeName}</strong>
+                              <span style={{ padding: '0.2rem 0.65rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700, background: badge.bg, color: badge.color }}>
+                                {order.status === 'IN_TRANSIT' ? 'In Transit' : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.82rem', color: '#6b7280' }}>{order.items?.length} item(s) · ₦{order.total?.toLocaleString()} · {new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                          </div>
+                          <ChevronRight size={18} style={{ color: '#9ca3af', transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }} />
+                        </div>
+
+                        {/* Expanded Details */}
+                        {isExpanded && (
+                          <div style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                            {/* Progress Timeline (not shown for CANCELLED) */}
+                            {order.status !== 'CANCELLED' && (
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0' }}>
+                                {timelineStages.map((stage, i) => {
+                                  const done = i <= currentStageIdx;
+                                  const active = i === currentStageIdx;
+                                  return (
+                                    <div key={stage.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                                      {/* Connector line */}
+                                      {i < timelineStages.length - 1 && (
+                                        <div style={{ position: 'absolute', top: '18px', left: '50%', width: '100%', height: '3px', background: i < currentStageIdx ? '#16a34a' : '#e5e7eb', zIndex: 0 }} />
+                                      )}
+                                      {/* Stage dot */}
+                                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: active ? '#16a34a' : done ? '#dcfce7' : '#f3f4f6', border: `3px solid ${active ? '#16a34a' : done ? '#16a34a' : '#e5e7eb'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', zIndex: 1, transition: 'all 0.3s' }}>
+                                        {stage.icon}
+                                      </div>
+                                      <span style={{ fontSize: '0.72rem', fontWeight: active ? 700 : 500, color: active ? '#16a34a' : done ? '#374151' : '#9ca3af', marginTop: '0.4rem', textAlign: 'center', lineHeight: 1.2 }}>{stage.label}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            {/* Items List */}
+                            <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                              <strong style={{ fontSize: '0.85rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '0.25rem' }}>Order Items</strong>
+                              {order.items?.map((item: any) => (
+                                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                                  <span style={{ color: '#374151' }}>{item.product?.name} × {item.quantity}</span>
+                                  <span style={{ fontWeight: 600, color: '#111827' }}>₦{(item.price * item.quantity).toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Price Breakdown */}
+                            <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.88rem', color: '#6b7280' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Subtotal</span><span>₦{order.subtotal?.toLocaleString()}</span></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Delivery Fee</span><span>₦{order.deliveryFee?.toLocaleString()}</span></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Platform Fee</span><span>₦{order.platformFee?.toLocaleString()}</span></div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, color: '#111827', fontSize: '0.95rem', marginTop: '0.25rem' }}><span>Total</span><span>₦{order.total?.toLocaleString()}</span></div>
+                            </div>
+
+                            {/* Delivery Address & Rider */}
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                              {deliveryAddr?.line1 && (
+                                <div style={{ flex: 1, minWidth: '200px', background: '#f0fdf4', borderRadius: '10px', padding: '0.85rem 1rem' }}>
+                                  <p style={{ margin: '0 0 0.3rem', fontWeight: 700, fontSize: '0.8rem', color: '#15803d', textTransform: 'uppercase' }}>📍 Delivery To</p>
+                                  <p style={{ margin: 0, fontSize: '0.88rem', color: '#374151' }}>{deliveryAddr.line1}{deliveryAddr.line2 ? `, ${deliveryAddr.line2}` : ''}, {deliveryAddr.city}</p>
+                                </div>
+                              )}
+                              {order.rider && (
+                                <div style={{ flex: 1, minWidth: '200px', background: '#faf5ff', borderRadius: '10px', padding: '0.85rem 1rem' }}>
+                                  <p style={{ margin: '0 0 0.3rem', fontWeight: 700, fontSize: '0.8rem', color: '#7c3aed', textTransform: 'uppercase' }}>🛵 Your Rider</p>
+                                  <p style={{ margin: 0, fontSize: '0.88rem', color: '#374151' }}>{order.rider.vehicleType}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Payment Reference */}
+                            {order.payment?.reference && (
+                              <p style={{ margin: 0, fontSize: '0.78rem', color: '#9ca3af', padding: '0.5rem 0.75rem', background: '#f9fafb', borderRadius: '6px', fontFamily: 'monospace' }}>
+                                Ref: {order.payment.reference}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 

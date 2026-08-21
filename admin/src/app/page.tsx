@@ -24,6 +24,8 @@ export default function AdminDashboard() {
   const [riders, setRiders] = useState([]);
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [allOrders, setAllOrders] = useState<any[]>([]);
+  const [allPayments, setAllPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Settings State
@@ -108,6 +110,12 @@ export default function AdminDashboard() {
 
       const catRes = await fetch('http://localhost:5000/api/admin/categories', { headers });
       if (catRes.ok) setCategories((await catRes.json()).data);
+
+      const ordersRes = await fetch('http://localhost:5000/api/admin/orders', { headers });
+      if (ordersRes.ok) setAllOrders((await ordersRes.json()).data);
+
+      const payRes = await fetch('http://localhost:5000/api/admin/payments', { headers });
+      if (payRes.ok) setAllPayments((await payRes.json()).data);
 
       setLoading(false);
     } catch (err) {
@@ -450,11 +458,45 @@ export default function AdminDashboard() {
             {activeTab === 'Orders' && (
               <div className="tab-pane fade-in">
                 <div className="page-header"><h2>Orders</h2><p className="subtitle">Global marketplace order ledger.</p></div>
-                <div className="empty-state">
-                  <ShoppingBag size={52} className="empty-icon" />
-                  <h3>No Orders Found</h3>
-                  <p>Order architecture is staged. Records will populate here once transactions begin.</p>
-                </div>
+                {allOrders.length === 0 ? (
+                  <div className="empty-state">
+                    <ShoppingBag size={52} className="empty-icon" />
+                    <h3>No Orders Found</h3>
+                    <p>Order records will appear here once transactions are initiated.</p>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="admin-table">
+                      <thead>
+                        <tr><th>Order ID</th><th>Customer</th><th>Store</th><th>Items</th><th>Total</th><th>Status</th><th>Type</th><th>Date</th></tr>
+                      </thead>
+                      <tbody>
+                        {allOrders.map((o: any) => {
+                          const sc: Record<string, { bg: string; color: string }> = {
+                            PENDING:    { bg: '#fef3c7', color: '#92400e' },
+                            ACCEPTED:   { bg: '#dbeafe', color: '#1e40af' },
+                            IN_TRANSIT: { bg: '#ede9fe', color: '#5b21b6' },
+                            DELIVERED:  { bg: '#dcfce7', color: '#15803d' },
+                            CANCELLED:  { bg: '#fee2e2', color: '#991b1b' },
+                          };
+                          const badge = sc[o.status] || { bg: '#f3f4f6', color: '#374151' };
+                          return (
+                            <tr key={o.id}>
+                              <td><code style={{ fontSize: '0.78rem', color: '#6b7280' }}>#{o.id.slice(0, 8)}</code></td>
+                              <td><strong>{o.customer?.firstName} {o.customer?.lastName}</strong><br /><span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>{o.customer?.email}</span></td>
+                              <td>{o.vendor?.storeName || 'N/A'}</td>
+                              <td>{o.items?.length || 0}</td>
+                              <td><strong>₦{o.total?.toLocaleString()}</strong></td>
+                              <td><span style={{ padding: '0.25rem 0.65rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700, background: badge.bg, color: badge.color }}>{o.status === 'IN_TRANSIT' ? 'In Transit' : o.status.charAt(0) + o.status.slice(1).toLowerCase()}</span></td>
+                              <td><span className="status-badge" style={{ background: o.type === 'DELIVERY' ? '#e0f2fe' : '#fef9c3', color: o.type === 'DELIVERY' ? '#0284c7' : '#92400e' }}>{o.type}</span></td>
+                              <td>{new Date(o.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
@@ -537,11 +579,36 @@ export default function AdminDashboard() {
                 <div className="page-header">
                   <h2>{activeTab}</h2><p className="subtitle">Platform {activeTab.toLowerCase()} ledgers.</p>
                 </div>
-                <div className="empty-state">
-                  <CreditCard size={52} className="empty-icon" />
-                  <h3>No {activeTab} Records</h3>
-                  <p>Transactions will appear here when properly initiated by gateways.</p>
-                </div>
+                {activeTab === 'Payments' && allPayments.length > 0 ? (
+                  <div className="table-responsive">
+                    <table className="admin-table">
+                      <thead>
+                        <tr><th>Reference</th><th>Customer</th><th>Store</th><th>Subtotal</th><th>Delivery</th><th>Platform 2%</th><th>Grand Total</th><th>Status</th><th>Date</th></tr>
+                      </thead>
+                      <tbody>
+                        {allPayments.map((p: any) => (
+                          <tr key={p.id}>
+                            <td><code style={{ fontSize: '0.75rem', color: '#6b7280' }}>{p.reference?.slice(0, 18)}…</code></td>
+                            <td>{p.order?.customer?.firstName} {p.order?.customer?.lastName}</td>
+                            <td>{p.order?.vendor?.storeName || 'N/A'}</td>
+                            <td>₦{p.order?.subtotal?.toLocaleString()}</td>
+                            <td>₦{p.order?.deliveryFee?.toLocaleString()}</td>
+                            <td><strong style={{ color: '#e11d48' }}>₦{p.order?.platformFee?.toLocaleString()}</strong></td>
+                            <td><strong>₦{p.amount?.toLocaleString()}</strong></td>
+                            <td><span className={`status-badge ${p.status === 'SUCCESS' ? 'active' : p.status === 'PENDING' ? 'pending' : 'suspended'}`}>{p.status}</span></td>
+                            <td>{new Date(p.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <CreditCard size={52} className="empty-icon" />
+                    <h3>No {activeTab} Records</h3>
+                    <p>Transactions will appear here when properly initiated by gateways.</p>
+                  </div>
+                )}
               </div>
             )}
 
