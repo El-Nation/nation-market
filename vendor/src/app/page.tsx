@@ -763,7 +763,7 @@ export default function Home() {
 
             {/* Filter Tabs */}
             <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 1rem', flexWrap: 'wrap' }}>
-              {['All Orders', 'PENDING', 'ACCEPTED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].map(f => (
+              {['All Orders', 'PENDING', 'PAID', 'ACCEPTED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].map(f => (
                 <button key={f} onClick={() => setActiveOrderFilter(f)}
                   style={{ padding: '0.4rem 1rem', borderRadius: '20px', border: '1px solid #e5e7eb', background: activeOrderFilter === f ? '#1d4ed8' : '#fff', color: activeOrderFilter === f ? '#fff' : '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem' }}>
                   {f === 'IN_TRANSIT' ? 'In Transit' : f.charAt(0) + f.slice(1).toLowerCase()}
@@ -785,7 +785,8 @@ export default function Home() {
                   {filtered.map((order: any) => {
                     const statusColors: Record<string, { bg: string; color: string }> = {
                       PENDING:    { bg: '#fef3c7', color: '#92400e' },
-                      ACCEPTED:   { bg: '#dbeafe', color: '#1e40af' },
+                      PAID:       { bg: '#dbeafe', color: '#1d4ed8' },
+                      ACCEPTED:   { bg: '#e0e7ff', color: '#4338ca' },
                       IN_TRANSIT: { bg: '#ede9fe', color: '#5b21b6' },
                       DELIVERED:  { bg: '#dcfce7', color: '#15803d' },
                       CANCELLED:  { bg: '#fee2e2', color: '#991b1b' },
@@ -793,6 +794,7 @@ export default function Home() {
                     const sc = statusColors[order.status] || { bg: '#f3f4f6', color: '#374151' };
                     const nextActions: Record<string, { label: string; status: string; color: string }[]> = {
                       PENDING:    [{ label: 'Accept Order', status: 'ACCEPTED', color: '#1d4ed8' }, { label: 'Cancel', status: 'CANCELLED', color: '#dc2626' }],
+                      PAID:       [{ label: 'Accept Order', status: 'ACCEPTED', color: '#1d4ed8' }, { label: 'Cancel', status: 'CANCELLED', color: '#dc2626' }],
                       ACCEPTED:   [{ label: 'Mark In Transit', status: 'IN_TRANSIT', color: '#7c3aed' }, { label: 'Cancel', status: 'CANCELLED', color: '#dc2626' }],
                       IN_TRANSIT: [{ label: 'Mark Delivered', status: 'DELIVERED', color: '#16a34a' }],
                       DELIVERED:  [],
@@ -816,11 +818,29 @@ export default function Home() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
                           <div>
                             <p style={{ fontWeight: 700, fontSize: '0.95rem', margin: '0 0 0.2rem', color: '#111827' }}>
-                              {order.customer.firstName} {order.customer.lastName}
+                              {!order.customer ? order.parentOrder?.guestName : `${order.customer.firstName} ${order.customer.lastName}`}
+                              {!order.customer && <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', background: '#f3f4f6', color: '#4b5563', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>GUEST</span>}
                             </p>
-                            <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: 0 }}>{order.customer.email} · {order.customer.phone || 'No phone'}</p>
+                            <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: 0 }}>
+                              {!order.customer ? order.parentOrder?.guestEmail : order.customer.email} · {!order.customer ? order.parentOrder?.guestPhone : order.customer.phone || 'No phone'}
+                            </p>
+                            {order.deliveryAddress && (() => {
+                              try {
+                                const addr = JSON.parse(order.deliveryAddress);
+                                return <p style={{ fontSize: '0.8rem', color: '#4b5563', margin: '0.3rem 0 0' }}>📍 {addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}, {addr.city}</p>;
+                              } catch { return null; }
+                            })()}
+                            {order.parentOrder?.deliveryInstructions && (
+                                <p style={{ fontSize: '0.78rem', color: '#92400e', background: '#fef3c7', padding: '0.3rem 0.6rem', borderRadius: '4px', margin: '0.5rem 0 0', display: 'inline-block' }}>
+                                  📝 <strong>Note:</strong> {order.parentOrder.deliveryInstructions}
+                                </p>
+                            )}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', marginRight: '0.5rem' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontFamily: 'monospace' }}>#{order.id.slice(0, 8).toUpperCase()}</span>
+                              <span style={{ fontSize: '0.72rem', color: '#9ca3af' }}>{new Date(order.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
                             <span style={{ background: sc.bg, color: sc.color, padding: '0.3rem 0.85rem', borderRadius: '20px', fontWeight: 700, fontSize: '0.8rem' }}>
                               {order.status === 'IN_TRANSIT' ? 'In Transit' : order.status.charAt(0) + order.status.slice(1).toLowerCase()}
                             </span>
@@ -829,33 +849,44 @@ export default function Home() {
                         </div>
 
                         {/* Items */}
-                        <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '0.75rem', marginBottom: '0.75rem' }}>
+                        <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '0.75rem', marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           {order.items.map((item: any) => (
-                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#374151', padding: '0.2rem 0' }}>
-                              <span>× {item.quantity} &nbsp; {item.product.name}</span>
+                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#374151', padding: '0.2rem 0' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                {item.product.images && <img src={optimizeCloudinaryUrl(item.product.images, 60, 'fill')} alt={item.product.name} style={{ width: '38px', height: '38px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e5e7eb' }} />}
+                                <span style={{ fontWeight: 500 }}>× {item.quantity} &nbsp; {item.product.name}</span>
+                              </div>
                               <span style={{ fontWeight: 600 }}>₦{(item.price * item.quantity).toLocaleString()}</span>
                             </div>
                           ))}
                         </div>
 
-                        {/* Payment & Type */}
-                        <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280', marginBottom: actions.length > 0 ? '0.75rem' : 0 }}>
-                          <span>Type: <strong style={{ color: '#374151' }}>{order.type}</strong></span>
-                          <span>Payment: <strong style={{ color: order.payment?.status === 'SUCCESS' ? '#16a34a' : '#92400e' }}>{order.payment?.status || 'N/A'}</strong></span>
-                          <span>Ref: <strong style={{ color: '#374151' }}>{order.payment?.reference?.slice(0, 10) || '—'}…</strong></span>
-                        </div>
-
-                        {/* Action Buttons */}
-                        {actions.length > 0 && (
-                          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-                            {actions.map(a => (
-                              <button key={a.status} onClick={() => changeStatus(a.status)}
-                                style={{ padding: '0.45rem 1.1rem', background: a.color, color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
-                                {a.label}
-                              </button>
-                            ))}
+                        {/* Footer (Payment, Rider, Actions) */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', borderTop: '1px solid #f3f4f6', paddingTop: '0.75rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#6b7280' }}>
+                              <span>Type: <strong style={{ color: '#374151' }}>{order.type}</strong></span>
+                              <span>Payment: <strong style={{ color: order.payment?.status === 'SUCCESS' ? '#16a34a' : '#92400e' }}>{order.payment?.status || 'N/A'}</strong></span>
+                              <span>Ref: <strong style={{ color: '#374151' }}>{order.payment?.reference?.slice(0, 10) || '—'}…</strong></span>
+                            </div>
+                            {order.rider && (
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', fontSize: '0.78rem', background: '#faf5ff', color: '#5b21b6', padding: '0.4rem 0.8rem', borderRadius: '6px' }}>
+                                🛵 <strong>Assigned Rider:</strong> {order.rider.user.firstName} {order.rider.user.lastName} ({order.rider.user.phone}) · {order.rider.vehicleType} [{order.rider.status}]
+                              </div>
+                            )}
                           </div>
-                        )}
+
+                          {actions.length > 0 && (
+                            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                              {actions.map(a => (
+                                <button key={a.status} onClick={() => changeStatus(a.status)}
+                                  style={{ padding: '0.45rem 1.1rem', background: a.color, color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>
+                                  {a.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

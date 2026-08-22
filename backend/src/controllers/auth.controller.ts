@@ -44,6 +44,21 @@ export const login = async (req: Request, res: Response) => {
     if (!user) { return res.status(401).json({ success: false, message: 'Invalid credentials' }); }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) { return res.status(401).json({ success: false, message: 'Invalid credentials' }); }
+
+    try {
+      const timestamp = new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
+      sendNationMarketEmail(
+        user.email,
+        'New login detected',
+        'Nation Market Security Alert',
+        `<p>Hello ${user.firstName},</p>
+         <p>A new login was detected on your Nation Market account on <strong>${timestamp}</strong>.</p>
+         <p>If this was not you, please secure your account by changing your password immediately.</p>`
+      ).catch(e => console.log('Login email notification could not be dispatched immediately', e));
+    } catch (e) {
+      console.log('Timestamp generation error:', e);
+    }
+
     res.json({ success: true, data: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role, token: generateToken(user.id, user.role) } });
   } catch (error: any) { res.status(500).json({ success: false, message: error.message }); }
 };

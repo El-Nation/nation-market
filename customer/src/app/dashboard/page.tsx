@@ -259,12 +259,12 @@ export default function CustomerDashboard() {
 
             <div className="metrics-grid">
               {[
-                { icon: ShoppingBag, label: 'Total Orders', val: '0', color: 'blue' },
-                { icon: Package, label: 'Active Deliveries', val: '0', color: 'green' },
-                { icon: Heart, label: 'Saved Items', val: '0', color: 'rose' },
-                { icon: Star, label: 'Reviews Given', val: '0', color: 'amber' },
-              ].map(({ icon: Icon, label, val, color }) => (
-                <div key={label} className="metric-card">
+                { icon: ShoppingBag, label: 'Total Orders', val: orders.length.toString(), color: 'blue', tab: 'Orders' },
+                { icon: Package, label: 'Active Deliveries', val: orders.filter((o: any) => o.status === 'IN_TRANSIT').length.toString(), color: 'green', tab: 'Orders' },
+                { icon: Heart, label: 'Saved Items', val: '0', color: 'rose', tab: 'Saved Items' },
+                { icon: FileText, label: 'Receipts', val: Array.from(new Set(orders.map((o: any) => o.parentOrder?.payment?.reference).filter(Boolean))).length.toString(), color: 'amber', tab: 'Receipts' },
+              ].map(({ icon: Icon, label, val, color, tab }) => (
+                <div key={label} className="metric-card" style={{ cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }} onClick={() => setActiveTab(tab)} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
                   <div className={`metric-icon ic-${color}`}><Icon size={22} /></div>
                   <div><p className="metric-label">{label}</p><p className="metric-val">{val}</p></div>
                 </div>
@@ -292,7 +292,7 @@ export default function CustomerDashboard() {
 
             {!ordersLoading && (() => {
               const filtered = orders.filter(o => {
-                if (orderFilter === 'Ongoing') return ['PENDING', 'ACCEPTED', 'IN_TRANSIT'].includes(o.status);
+                if (orderFilter === 'Ongoing') return ['PENDING', 'PAID', 'ACCEPTED', 'IN_TRANSIT'].includes(o.status);
                 if (orderFilter === 'Completed') return o.status === 'DELIVERED';
                 return o.status === 'CANCELLED';
               });
@@ -377,7 +377,14 @@ export default function CustomerDashboard() {
                               <strong style={{ fontSize: '0.85rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '0.25rem' }}>Order Items</strong>
                               {order.items?.map((item: any) => (
                                 <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
-                                  <span style={{ color: '#374151' }}>{item.product?.name} × {item.quantity}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    {item.product?.images ? (
+                                      <img src={item.product?.images.split(',')[0].includes('cloudinary') ? item.product?.images.split(',')[0].replace('/upload/', '/upload/w_60,h_60,c_fill,q_auto/') : item.product?.images.split(',')[0]} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', background: '#e5e7eb' }} alt="" />
+                                    ) : (
+                                      <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>📦</div>
+                                    )}
+                                    <span style={{ color: '#374151' }}>{item.product?.name} × {item.quantity}</span>
+                                  </div>
                                   <span style={{ fontWeight: 600, color: '#111827' }}>₦{(item.price * item.quantity).toLocaleString()}</span>
                                 </div>
                               ))}
@@ -442,12 +449,37 @@ export default function CustomerDashboard() {
         {/* ── RECEIPTS ── */}
         {activeTab === 'Receipts' && (
           <div className="tab-pane fade-in">
-            <div className="page-header"><h2>Receipts</h2><p className="subtitle">View and download your payment receipts.</p></div>
-            <div className="empty-state">
-              <FileText size={52} className="empty-icon" />
-              <h3>No receipts yet</h3>
-              <p>Your payment receipts will appear here once you complete a purchase.</p>
-            </div>
+            <div className="page-header"><h2>Receipts</h2><p className="subtitle">View and download your digital payment receipts.</p></div>
+            {(() => {
+              const uniqueReceipts = Array.from(new Map(
+                orders.filter((o: any) => o.parentOrder?.payment && o.status !== 'CANCELLED').map((o: any) => [o.parentOrder.payment.reference, o.parentOrder.payment])
+              ).values());
+              
+              if (uniqueReceipts.length === 0) return (
+                <div className="empty-state">
+                  <FileText size={52} className="empty-icon" />
+                  <h3>No receipts yet</h3>
+                  <p>Your payment receipts will appear here once you complete a purchase.</p>
+                </div>
+              );
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {uniqueReceipts.map((payment: any) => (
+                    <div key={payment.id} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 0.35rem', color: '#111827', fontSize: '1.05rem', fontWeight: 800 }}>Digital Receipt</h4>
+                        <p style={{ margin: '0 0 0.25rem', fontSize: '0.82rem', color: '#6b7280', fontFamily: 'monospace' }}>Ref: {payment.reference}</p>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#6b7280' }}>
+                          {new Date(payment.createdAt).toLocaleDateString()} · <span style={{ color: payment.status === 'SUCCESS' ? '#059669' : '#d97706', fontWeight: 700, padding: '0.1rem 0.5rem', background: payment.status === 'SUCCESS' ? '#ecfdf5' : '#fffbeb', borderRadius: '4px' }}>{payment.status}</span>
+                        </p>
+                      </div>
+                      <button onClick={() => window.open(`/receipt/${payment.reference}`, '_blank')} style={{ background: '#075985', color: '#fff', border: 'none', padding: '0.65rem 1.25rem', fontSize: '0.85rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer' }}>View Receipt →</button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
 

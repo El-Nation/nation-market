@@ -273,6 +273,8 @@ export const getVendorOrders = async (req: any, res: any) => {
       where: { vendorId: profileId },
       include: {
         customer: { select: { firstName: true, lastName: true, email: true, phone: true } },
+        parentOrder: { select: { guestName: true, guestEmail: true, guestPhone: true, deliveryInstructions: true } },
+        rider: { select: { user: { select: { firstName: true, lastName: true, phone: true } }, vehicleType: true, plateNumber: true, status: true } },
         items: { include: { product: { select: { name: true, images: true } } } },
         payment: { select: { status: true, amount: true, reference: true } }
       },

@@ -740,12 +740,27 @@ export default function MarketplacePage() {
               <div>
                 <p style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.25rem' }}>{user.firstName} {user.lastName}</p>
                 <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem' }}>{user.email} · Role: {user.role}</p>
-                <button
-                  onClick={() => { logout(); setProfileModalOpen(false); }}
-                  style={{ width: '100%', background: '#ef4444', color: '#fff', border: 'none', borderRadius: '12px', padding: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  Logout
-                </button>
+                
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    onClick={() => {
+                      setProfileModalOpen(false);
+                      if (user.role === 'ADMIN') window.location.href = 'http://localhost:3002';
+                      else if (user.role === 'VENDOR') window.location.href = 'http://localhost:3001';
+                      else if (user.role === 'RIDER') window.location.href = 'http://localhost:3003';
+                      else router.push('/dashboard');
+                    }}
+                    style={{ flex: 2, background: '#059669', color: '#fff', border: 'none', borderRadius: '12px', padding: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Go to Dashboard →
+                  </button>
+                  <button
+                    onClick={() => { logout(); setProfileModalOpen(false); }}
+                    style={{ flex: 1, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '12px', padding: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
             ) : (
               <div>

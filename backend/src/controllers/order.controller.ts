@@ -5,7 +5,13 @@ export const createOrder = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
     const userId = user?.id || null;
-    const userEmail = user?.email || req.body.guestEmail;
+    let userEmail = user?.email || req.body.guestEmail;
+
+    if (userId && !userEmail) {
+      const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+      if (dbUser) userEmail = dbUser.email;
+    }
+
     const { items, deliveryAddressId, deliveryAddress, guestEmail, guestName, guestPhone, type = 'DELIVERY' } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -69,12 +75,13 @@ export const createOrder = async (req: Request, res: Response) => {
 
     let grandTotal = 0;
     const mainRef = `NM-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-
+    const numVendors = Object.keys(itemsByVendor).length;
+    
     for (const vendorId of Object.keys(itemsByVendor)) {
       const vendorItems = itemsByVendor[vendorId];
       const subtotal = vendorItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-      const deliveryFee = type === 'DELIVERY' ? 500 : 0;
-      const platformFee = Math.round(subtotal * 0.02);
+      const deliveryFee = type === 'DELIVERY' ? (1500 / numVendors) : 0;
+      const platformFee = (500 / numVendors);
       grandTotal += subtotal + deliveryFee + platformFee;
     }
 
@@ -103,8 +110,8 @@ export const createOrder = async (req: Request, res: Response) => {
     for (const vendorId of Object.keys(itemsByVendor)) {
       const vendorItems = itemsByVendor[vendorId];
       const subtotal = vendorItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-      const deliveryFee = type === 'DELIVERY' ? 500 : 0;
-      const platformFee = Math.round(subtotal * 0.02);
+      const deliveryFee = type === 'DELIVERY' ? (1500 / numVendors) : 0;
+      const platformFee = (500 / numVendors);
       const total = subtotal + deliveryFee + platformFee;
 
       const order = await prisma.order.create({
@@ -206,7 +213,8 @@ export const getCustomerOrders = async (req: Request, res: Response) => {
           items: { include: { product: true } },
           vendor: { select: { id: true, storeName: true, logoUrl: true } },
           rider: { select: { id: true, vehicleType: true } },
-          payment: true
+          rider: { select: { id: true, vehicleType: true } },
+          parentOrder: { include: { payment: true } }
         },
         orderBy: { createdAt: 'desc' },
         skip,

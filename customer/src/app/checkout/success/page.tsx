@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore } from '../../../store/authStore';
 
 function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
@@ -78,7 +78,7 @@ function CheckoutSuccessContent() {
         </p>
 
         {loading ? (
-          <p style={{ color: #6b7280, fontSize: '0.9rem' }}>Retrieving order receipt details...</p>
+          <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>Retrieving order receipt details...</p>
         ) : orderData ? (
           <div className="order-box">
             <div className="order-row"><span>Order Reference</span><strong>{reference || orderData.id.slice(0, 8)}</strong></div>
@@ -106,7 +106,11 @@ function CheckoutSuccessContent() {
         ) : null}
 
         <div className="btn-group">
-          <button className="btn-primary" onClick={() => router.push('/dashboard')}>View My Orders</button>
+          {token ? (
+            <button className="btn-primary" onClick={() => router.push('/dashboard')}>View My Orders</button>
+          ) : (
+            <button className="btn-primary" onClick={() => router.push(`/receipt/${reference}`)}>View Digital Receipt</button>
+          )}
           <button className="btn-secondary" onClick={() => router.push('/')}>Continue Shopping</button>
         </div>
       </div>

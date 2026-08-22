@@ -29,8 +29,8 @@ export default function CartPage() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-  const DELIVERY_FEE = 500;
-  const PLATFORM_FEE = Math.round(subtotal() * 0.02);
+  const DELIVERY_FEE = 1500;
+  const PLATFORM_FEE = 500;
   const total = subtotal() + DELIVERY_FEE + PLATFORM_FEE;
 
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function CartPage() {
         type: 'DELIVERY'
       };
 
-      const res = await fetch(`${API_URL}/orders`, { // Hit the main order route explicitly supporting optionalAuth!
+      const res = await fetch(`${API_URL}/customer/orders`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ export default function CartPage() {
         .cart-header-inner { max-width: 1280px; margin: 0 auto; padding: 0 1.5rem; height: 64px; display: flex; align-items: center; justify-content: space-between; }
         .cart-back { font-size: 0.88rem; color: #005b9f; font-weight: 600; text-decoration: none; }
         .cart-logo { height: 44px; object-fit: contain; cursor: pointer; }
-        .cart-layout { max-width: 1060px; margin: 2rem auto; padding: 0 1.5rem; display: grid; grid-template-columns: 1fr 360px; gap: 1.5rem; }
+        .cart-layout { max-width: 800px; margin: 2rem auto; padding: 0 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
         .cart-items { background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; overflow: hidden; }
         .cart-items-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid #f5f5f5; font-weight: 800; font-size: 1rem; }
         .cart-item { display: flex; gap: 1rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f5f5f5; align-items: center; }
@@ -177,27 +177,34 @@ export default function CartPage() {
         .cart-item-price { font-weight: 800; font-size: 0.95rem; color: #005b9f; white-space: nowrap; }
         .cart-remove-btn { background: none; border: none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-family: inherit; margin-top: 0.25rem; }
         
-        .address-box { background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+        .address-box { background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; padding: 1.25rem 1.5rem; margin-bottom: 0; }
         .address-box h3 { font-size: 0.95rem; font-weight: 800; margin-bottom: 0.75rem; color: #111827; }
         .addr-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; transition: border 0.15s; }
         .addr-card.selected { border-color: #005b9f; background: #f0f7ff; }
         .addr-radio { accent-color: #005b9f; }
         .addr-details { font-size: 0.85rem; color: #374151; }
 
-        .cart-summary { background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; padding: 1.5rem; height: fit-content; position: sticky; top: 80px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+
+        .cart-summary { background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; padding: 1.5rem; height: fit-content; }
         .cart-summary h3 { font-weight: 800; margin-bottom: 1.25rem; font-size: 1rem; }
         .cart-summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 0.75rem; color: #4b5563; }
         .cart-summary-row.total { font-weight: 800; font-size: 1.05rem; color: #111827; padding-top: 0.75rem; border-top: 1px solid #f0f0f0; }
-        .cart-checkout-btn { width: 100%; background: #005b9f; color: #fff; border: none; border-radius: 10px; padding: 0.9rem; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 1.25rem; transition: background 0.2s; font-family: inherit; }
+        .cart-checkout-btn { width: 100%; background: #005b9f; color: #fff; border: none; border-radius: 10px; padding: 0.95rem; font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 1.25rem; transition: background 0.2s; font-family: inherit; }
         .cart-checkout-btn:disabled { background: #94a3b8; cursor: not-allowed; }
         .cart-checkout-btn:hover:not(:disabled) { background: #004a82; }
+        
         .cart-empty { text-align: center; padding: 5rem 2rem; }
         .cart-empty-icon { font-size: 4rem; margin-bottom: 1rem; }
         .cart-empty p { font-size: 1rem; color: #9ca3af; margin-bottom: 1.5rem; }
         .cart-shop-btn { background: #005b9f; color: #fff; border: none; border-radius: 10px; padding: 0.8rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; font-family: inherit; }
-        @media (max-width: 800px) {
-          .cart-layout { grid-template-columns: 1fr; }
-          .cart-summary { position: static; }
+        
+        @media (max-width: 600px) {
+          .cart-layout { padding: 0 1rem; margin: 1rem auto; gap: 1rem; }
+          .cart-item { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+          .cart-item-img { width: 100%; height: 180px; }
+          .cart-item-img-ph { width: 100%; height: 180px; }
+          .form-grid { grid-template-columns: 1fr; }
         }
       `}</style>
 
@@ -232,13 +239,15 @@ export default function CartPage() {
               </div>
 
               {!token && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                  <input type="text" placeholder="Full Name" value={guestName} onChange={e => setGuestName(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
-                  <input type="email" placeholder="Email Address (for Digital Receipt)" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
-                  <input type="tel" placeholder="Phone Number" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
-                  <div style={{ height: '1px', background: '#e5e7eb', margin: '0.5rem 0' }} />
-                  <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>📍 Delivery Destination</h4>
-                </div>
+                <>
+                  <div className="form-grid">
+                    <input type="text" placeholder="Full Name" value={guestName} onChange={e => setGuestName(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
+                    <input type="email" placeholder="Email Address (for Digital Receipt)" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
+                    <input type="tel" placeholder="Phone Number" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
+                  </div>
+                  <div style={{ height: '1px', background: '#e5e7eb', margin: '0.5rem 0 1rem' }} />
+                  <h4 style={{ fontSize: '0.9rem', marginBottom: '0.75rem' }}>📍 Delivery Destination</h4>
+                </>
               )}
 
               {token && loadingAddresses ? (
