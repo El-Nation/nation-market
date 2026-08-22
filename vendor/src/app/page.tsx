@@ -439,11 +439,11 @@ export default function Home() {
             <div className="metrics-grid">
               <div className="metric-card" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('Payments')} title="View Earnings & Payouts">
                 <div className="metric-icon bg-blue-100 text-blue-600"><DollarSign size={24} /></div>
-                <div><h4>Total Revenue</h4><div className="metric-val">₦ 0.00</div></div>
+                <div><h4>Total Revenue</h4><div className="metric-val">₦ {vendorOrders.filter(o => o.status === 'DELIVERED').reduce((acc, o) => acc + (o.vendorEarnings || 0), 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div></div>
               </div>
               <div className="metric-card" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('Orders')} title="View Orders & Fulfillment">
                 <div className="metric-icon bg-green-100 text-green-600"><ListOrdered size={24} /></div>
-                <div><h4>Pending Orders</h4><div className="metric-val">0</div></div>
+                <div><h4>Pending Orders</h4><div className="metric-val">{vendorOrders.filter(o => o.status === 'PENDING').length}</div></div>
               </div>
               <div className="metric-card" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('Products')} title="View Products Catalog">
                 <div className="metric-icon bg-purple-100 text-purple-600"><Package size={24} /></div>

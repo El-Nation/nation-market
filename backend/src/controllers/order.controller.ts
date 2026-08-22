@@ -3,12 +3,17 @@ import { prisma } from '../prisma';
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
-    const userEmail = (req as any).user.email;
-    const { items, deliveryAddressId, deliveryAddress, type = 'DELIVERY' } = req.body;
+    const user = (req as any).user;
+    const userId = user?.id || null;
+    const userEmail = user?.email || req.body.guestEmail;
+    const { items, deliveryAddressId, deliveryAddress, guestEmail, guestName, guestPhone, type = 'DELIVERY' } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Cart items are required' });
+    }
+
+    if (!userEmail) {
+      return res.status(400).json({ success: false, message: 'Email is required for guest checkout' });
     }
 
     // 1. Fetch products from DB to ensure prices, inventory, and availability
@@ -46,7 +51,7 @@ export const createOrder = async (req: Request, res: Response) => {
 
     // Resolve delivery address string
     let finalAddressString = '';
-    if (deliveryAddressId) {
+    if (deliveryAddressId && userId) {
       const addr = await prisma.customerAddress.findUnique({ where: { id: deliveryAddressId } });
       if (addr && addr.userId === userId) {
         finalAddressString = JSON.stringify({
@@ -62,9 +67,37 @@ export const createOrder = async (req: Request, res: Response) => {
       finalAddressString = typeof deliveryAddress === 'string' ? deliveryAddress : JSON.stringify(deliveryAddress);
     }
 
-    const createdOrders: any[] = [];
     let grandTotal = 0;
     const mainRef = `NM-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    for (const vendorId of Object.keys(itemsByVendor)) {
+      const vendorItems = itemsByVendor[vendorId];
+      const subtotal = vendorItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      const deliveryFee = type === 'DELIVERY' ? 500 : 0;
+      const platformFee = Math.round(subtotal * 0.02);
+      grandTotal += subtotal + deliveryFee + platformFee;
+    }
+
+    const parentOrder = await prisma.parentOrder.create({
+      data: {
+        customerId: userId,
+        guestEmail: !userId ? guestEmail : null,
+        guestName: !userId ? guestName : null,
+        guestPhone: !userId ? guestPhone : null,
+        totalAmount: grandTotal,
+        reference: mainRef,
+        status: 'PENDING',
+        payment: {
+          create: {
+            amount: grandTotal,
+            reference: mainRef,
+            status: 'PENDING'
+          }
+        }
+      }
+    });
+
+    const createdOrders: any[] = [];
 
     // 3. Create Orders (one per vendor)
     for (const vendorId of Object.keys(itemsByVendor)) {
@@ -73,39 +106,31 @@ export const createOrder = async (req: Request, res: Response) => {
       const deliveryFee = type === 'DELIVERY' ? 500 : 0;
       const platformFee = Math.round(subtotal * 0.02);
       const total = subtotal + deliveryFee + platformFee;
-      grandTotal += total;
-
-      const vendorRef = `${mainRef}-${vendorId.substring(0, 4)}`;
 
       const order = await prisma.order.create({
         data: {
+          parentOrderId: parentOrder.id,
           customerId: userId,
           vendorId,
           subtotal,
           deliveryFee,
           platformFee,
+          vendorEarnings: subtotal,
+          riderEarnings: deliveryFee,
           total,
-          status: 'PENDING',
+          status: 'PENDING_PAYMENT',
           type,
           deliveryAddress: finalAddressString,
           items: {
-            create: vendorItems.map(i => ({
+            create: vendorItems.map((i: any) => ({
               productId: i.product.id,
               quantity: i.quantity,
               price: i.price
             }))
-          },
-          payment: {
-            create: {
-              amount: total,
-              reference: vendorRef,
-              status: 'PENDING'
-            }
           }
         },
         include: {
           items: { include: { product: true } },
-          payment: true,
           vendor: { select: { storeName: true } }
         }
       });

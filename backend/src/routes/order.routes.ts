@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { createOrder, getCustomerOrders, getOrderById } from '../controllers/order.controller';
-import { protect } from '../middleware/auth.middleware';
+import { protect, optionalAuth } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.post('/', protect, createOrder);
+router.post('/', optionalAuth, createOrder);
 router.get('/', protect, getCustomerOrders);
 router.get('/:id', protect, getOrderById);
 

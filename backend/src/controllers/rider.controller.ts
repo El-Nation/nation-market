@@ -197,3 +197,29 @@ export const updateDeliveryStatus = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// 6. Retrieve Delivery History (DELIVERED only)
+export const getDeliveryHistory = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const riderProfile = await getRiderProfileByUserId(userId);
+    if (!riderProfile) return res.status(404).json({ success: false, message: 'Rider profile not found' });
+
+    const history = await prisma.order.findMany({
+      where: {
+        riderId: riderProfile.id,
+        status: 'DELIVERED'
+      },
+      include: {
+        items: true,
+        vendor: { select: { id: true, storeName: true, address: true, logoUrl: true } },
+        customer: { select: { firstName: true, lastName: true } }
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    res.json({ success: true, data: history });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

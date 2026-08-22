@@ -4,7 +4,7 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
+import { sendNationMarketEmail } from '../utils/mailer';
 import { generateSecret, verify } from 'otplib';
 import QRCode from 'qrcode';
 
@@ -14,13 +14,7 @@ const generateToken = (id: string, role: string) => {
   return jwt.sign({ id, role }, JWT_SECRET, { expiresIn: '30d' });
 };
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(process.env.SMTP_PORT) === 465 ? 587 : (Number(process.env.SMTP_PORT) || 587),
-  secure: false, 
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  tls: { rejectUnauthorized: false }
-});
+
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -73,18 +67,18 @@ export const applyVendor = async (req: Request, res: Response) => {
 
     // Shoot registration confirmation emails natively bypassing blocking scopes
     try {
-      await transporter.sendMail({
-        from: `"Nation-Market Team" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject: 'Welcome to Nation-Market - Vendor Registration Successful',
-        html: `<h3>Hello ${firstName},</h3><p>Your vendor account for <strong>${storeName}</strong> was successfully created and activated. You can now securely login to your Vendor Dashboard!</p>`
-      });
-      await transporter.sendMail({
-        from: `"Nation-Market System" <${process.env.SMTP_USER}>`,
-        to: process.env.SMTP_USER,
-        subject: 'Automated Alert: New Vendor Registration',
-        html: `<p>A new vendor <strong>${firstName} ${lastName}</strong> (${storeName}) has registered under the business type: ${businessType}.</p>`
-      });
+      await sendNationMarketEmail(
+        email,
+        'Vendor Registration Successful',
+        'Welcome to Nation-Market',
+        `<p>Hello ${firstName},</p><p>Your vendor account for <strong>${storeName}</strong> was successfully created and activated. You can now securely login to your Vendor Dashboard!</p>`
+      );
+      await sendNationMarketEmail(
+        process.env.SMTP_USER || 'admin@nation-market.local',
+        'New Vendor Registration',
+        'Automated Alert: New Vendor Registration',
+        `<p>A new vendor <strong>${firstName} ${lastName}</strong> (${storeName}) has registered under the business type: ${businessType}.</p>`
+      );
     } catch (e) {
       console.log('Email transmission encountered a non-fatal bypass sequence', e);
     }
@@ -121,18 +115,18 @@ export const applyRider = async (req: Request, res: Response) => {
     });
 
     try {
-      await transporter.sendMail({
-        from: `"Nation-Market Team" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject: 'Welcome to Nation-Market - Rider Registration Successful',
-        html: `<h3>Hello ${firstName},</h3><p>Your rider profile was successfully created and activated. You can now login to your Rider Dashboard!</p>`
-      });
-      await transporter.sendMail({
-        from: `"Nation-Market System" <${process.env.SMTP_USER}>`,
-        to: process.env.SMTP_USER,
-        subject: 'Automated Alert: New Rider Registration',
-        html: `<p>A new Rider <strong>${firstName} ${lastName}</strong> has successfully registered (${vehicleType}).</p>`
-      });
+      await sendNationMarketEmail(
+        email,
+        'Rider Registration Successful',
+        'Welcome to Nation-Market',
+        `<p>Hello ${firstName},</p><p>Your rider profile was successfully created and activated. You can now login to your Rider Dashboard!</p>`
+      );
+      await sendNationMarketEmail(
+        process.env.SMTP_USER || 'admin@nation-market.local',
+        'New Rider Registration',
+        'Automated Alert: New Rider Registration',
+        `<p>A new Rider <strong>${firstName} ${lastName}</strong> has successfully registered (${vehicleType}).</p>`
+      );
     } catch (e) {
       console.log('Email transmission encountered a non-fatal bypass sequence', e);
     }
@@ -148,12 +142,16 @@ export const forgotPassword = async (req: Request, res: Response) => {
     if (!user) { return res.status(404).json({ success: false, message: 'User not found' }); }
     const resetToken = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '15m' });
     const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
-    await transporter.sendMail({
-      from: `"Nation-Market Support" <${process.env.SMTP_USER}>`,
-      to: user.email,
-      subject: 'Nation-Market Secure Password Reset',
-      text: `You requested a password reset. Click this link securely to restore access: ${resetUrl}`,
-    });
+    await sendNationMarketEmail(
+      user.email,
+      'Secure Password Reset',
+      'Password Reset Request',
+      `<p>You requested a password reset. Click the button below securely to restore access:</p>
+       <br />
+       <a href="${resetUrl}" class="cta-button">Reset Your Password</a>
+       <br />
+       <p style="margin-top:20px;font-size:12px;color:grey;">If you didn't request this, please ignore this email.</p>`
+    );
     res.json({ success: true, message: 'Reset transmission fired successfully' });
   } catch (err: any) { res.status(500).json({ success: false, message: err.message }); }
 };

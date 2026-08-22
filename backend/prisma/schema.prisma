@@ -32,10 +32,32 @@ model User {
 
   vendorProfile VendorProfile?
   riderProfile  RiderProfile?
+  parentOrders  ParentOrder[]
   orders        Order[]
   wishlists     WishlistItem[]
   reviews       Review[]
   addresses     CustomerAddress[]
+}
+
+model ParentOrder {
+  id             String   @id @default(uuid())
+  
+  customerId     String?
+  customer       User?    @relation(fields: [customerId], references: [id])
+  
+  guestEmail     String?
+  guestName      String?
+  guestPhone     String?
+
+  totalAmount    Float
+  reference      String   @unique
+  status         String   @default("PENDING") // PENDING, SUCCESS, FAILED
+  
+  orders         Order[]
+  payment        Payment?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model VendorProfile {
@@ -154,8 +176,12 @@ model Product {
 
 model Order {
   id             String   @id @default(uuid())
-  customerId     String
-  customer       User     @relation(fields: [customerId], references: [id])
+  
+  parentOrderId  String
+  parentOrder    ParentOrder @relation(fields: [parentOrderId], references: [id])
+
+  customerId     String?
+  customer       User?     @relation(fields: [customerId], references: [id])
   
   vendorId       String
   vendor         VendorProfile @relation(fields: [vendorId], references: [id])
@@ -166,15 +192,17 @@ model Order {
   subtotal       Float
   deliveryFee    Float
   platformFee    Float
+  vendorEarnings Float    @default(0)
+  riderEarnings  Float    @default(0)
   total          Float
   
-  status         String   @default("PENDING") // PENDING, ACCEPTED, IN_TRANSIT, DELIVERED, CANCELLED
+  status         String   @default("PENDING_PAYMENT") 
   type           String   // DELIVERY, PICKUP
   
   deliveryAddress String? // JSON string
 
   items          OrderItem[]
-  payment        Payment?
+  payment        Payment?  // Retaining for direct vendor payouts compatibility
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -198,8 +226,12 @@ model OrderItem {
 
 model Payment {
   id            String   @id @default(uuid())
-  orderId       String   @unique
-  order         Order    @relation(fields: [orderId], references: [id])
+  
+  orderId       String?  @unique
+  order         Order?   @relation(fields: [orderId], references: [id])
+  
+  parentOrderId String?  @unique
+  parentOrder   ParentOrder? @relation(fields: [parentOrderId], references: [id])
   
   amount        Float
   reference     String   @unique // Paystack Reference

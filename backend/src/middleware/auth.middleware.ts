@@ -19,6 +19,20 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      (req as any).user = decoded;
+    } catch (error) {
+      // Proceed as guest for invalid token
+    }
+  }
+  next();
+};
+
 export const authorize = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const userRole = (req as any).user?.role;

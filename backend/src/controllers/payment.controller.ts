@@ -38,14 +38,9 @@ export const verifyPayment = async (req: Request, res: Response) => {
   try {
     const { reference } = req.params;
 
-    let payment = await prisma.payment.findFirst({
-      where: {
-        OR: [
-          { reference: reference },
-          { reference: { startsWith: reference } }
-        ]
-      },
-      include: { order: { include: { items: { include: { product: true } }, vendor: true } } }
+    let payment = await prisma.payment.findUnique({
+      where: { reference },
+      include: { parentOrder: { include: { orders: { include: { items: { include: { product: true } }, vendor: true } } } } }
     });
 
     if (!payment) {
@@ -77,8 +72,8 @@ export const verifyPayment = async (req: Request, res: Response) => {
       success: true,
       data: {
         paymentStatus: payment?.status,
-        orderId: payment?.orderId,
-        order: payment?.order
+        orderId: payment?.parentOrder?.id || payment?.orderId, // Fallback for old orders
+        parentOrder: payment?.parentOrder
       }
     });
 
@@ -88,14 +83,9 @@ export const verifyPayment = async (req: Request, res: Response) => {
 };
 
 async function processSuccessfulPayment(reference: string) {
-  const payment = await prisma.payment.findFirst({
-    where: {
-      OR: [
-        { reference: reference },
-        { reference: { startsWith: reference } }
-      ]
-    },
-    include: { order: { include: { items: true } } }
+  const payment = await prisma.payment.findUnique({
+    where: { reference },
+    include: { parentOrder: { include: { orders: { include: { items: true } } } } }
   });
 
   if (!payment) return null;
@@ -105,21 +95,31 @@ async function processSuccessfulPayment(reference: string) {
     const updatedPayment = await prisma.payment.update({
       where: { id: payment.id },
       data: { status: 'SUCCESS' },
-      include: { order: { include: { items: { include: { product: true } }, vendor: true } } }
+      include: { parentOrder: { include: { orders: { include: { items: { include: { product: true } }, vendor: true } } } } }
     });
 
-    // Update Order status to PENDING (awaiting vendor processing)
-    await prisma.order.update({
-      where: { id: payment.orderId },
-      data: { status: 'PENDING' }
-    });
-
-    // Decrement stock inventory for ordered products
-    for (const item of payment.order.items) {
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: { inventory: { decrement: item.quantity } }
+    if (payment.parentOrderId && payment.parentOrder) {
+      // Update ParentOrder status
+      await prisma.parentOrder.update({
+        where: { id: payment.parentOrderId },
+        data: { status: 'SUCCESS' }
       });
+
+      // Update ALL child Order statuses to PAID
+      for (const order of payment.parentOrder.orders) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: 'PAID' }
+        });
+
+        // Decrement stock inventory for ordered products
+        for (const item of order.items) {
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { inventory: { decrement: item.quantity } }
+          });
+        }
+      }
     }
 
     return updatedPayment;

@@ -15,6 +15,14 @@ export default function CartPage() {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [orderError, setOrderError] = useState('');
 
+  // Guest fields
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+
+  // Geolocation
+  const [geoStatus, setGeoStatus] = useState('');
+
   // New Address inline form
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState({ label: 'Home', line1: '', line2: '', city: 'Lagos', state: 'Lagos' });
@@ -25,7 +33,6 @@ export default function CartPage() {
   const PLATFORM_FEE = Math.round(subtotal() * 0.02);
   const total = subtotal() + DELIVERY_FEE + PLATFORM_FEE;
 
-  // Fetch saved customer addresses
   useEffect(() => {
     if (!token) return;
     async function fetchAddresses() {
@@ -47,11 +54,31 @@ export default function CartPage() {
       }
     }
     fetchAddresses();
-  }, [token]);
+  }, [token, API_URL]);
+
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      setGeoStatus('Geolocation not supported by your browser.');
+      return;
+    }
+    setGeoStatus('Locating...');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoStatus('Location found!');
+        setNewAddress(prev => ({ ...prev, line1: `${pos.coords.latitude}, ${pos.coords.longitude} (GPS Location)` }));
+        setShowAddressForm(true);
+      },
+      (err) => {
+        setGeoStatus('Location access denied. Please enter manually.');
+      },
+      { timeout: 10000 }
+    );
+  };
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAddress.line1 || !newAddress.city) return;
+    if (!token) return; // Guests don't save returning addresses
     try {
       const res = await fetch(`${API_URL}/customer/addresses`, {
         method: 'POST',
@@ -71,12 +98,12 @@ export default function CartPage() {
   };
 
   const handleProceedToCheckout = async () => {
-    if (!token) {
-      router.push('/login');
+    if (items.length === 0) return;
+    if (!token && (!guestEmail || !guestName || !newAddress.line1)) {
+      setOrderError('Please provide all guest details and delivery address to continue.');
       return;
     }
-    if (items.length === 0) return;
-    if (addresses.length === 0 && !showAddressForm) {
+    if (token && addresses.length === 0 && !showAddressForm && !newAddress.line1) {
       setShowAddressForm(true);
       setOrderError('Please provide a delivery address before proceeding.');
       return;
@@ -89,13 +116,19 @@ export default function CartPage() {
       const payload = {
         items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
         deliveryAddressId: selectedAddressId || undefined,
-        deliveryAddress: !selectedAddressId ? newAddress : undefined,
+        deliveryAddress: (!selectedAddressId || !token) ? newAddress : undefined,
+        guestEmail: !token ? guestEmail : undefined,
+        guestName: !token ? guestName : undefined,
+        guestPhone: !token ? guestPhone : undefined,
         type: 'DELIVERY'
       };
 
-      const res = await fetch(`${API_URL}/customer/orders`, {
+      const res = await fetch(`${API_URL}/orders`, { // Hit the main order route explicitly supporting optionalAuth!
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(payload)
       });
 
@@ -188,75 +221,58 @@ export default function CartPage() {
       ) : (
         <div className="cart-layout">
           <div>
-            {/* Delivery Address Selection (for authenticated users) */}
-            {token && (
-              <div className="address-box">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <h3>📍 Delivery Address</h3>
-                  <button
-                    onClick={() => setShowAddressForm(!showAddressForm)}
-                    style={{ background: 'none', border: 'none', color: '#005b9f', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
-                  >
+            <div className="address-box">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <h3>{token ? '📍 Delivery Address' : '👤 Guest Checkout Details'}</h3>
+                {token && (
+                  <button onClick={() => setShowAddressForm(!showAddressForm)} style={{ background: 'none', border: 'none', color: '#005b9f', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}>
                     {showAddressForm ? 'Cancel' : '+ Add Address'}
                   </button>
-                </div>
-
-                {loadingAddresses ? (
-                  <p style={{ fontSize: '0.85rem', color: '#6b7280' }}>Loading saved addresses...</p>
-                ) : addresses.length > 0 ? (
-                  addresses.map(addr => (
-                    <div
-                      key={addr.id}
-                      className={`addr-card ${selectedAddressId === addr.id ? 'selected' : ''}`}
-                      onClick={() => setSelectedAddressId(addr.id)}
-                    >
-                      <input
-                        type="radio"
-                        name="deliveryAddress"
-                        checked={selectedAddressId === addr.id}
-                        onChange={() => setSelectedAddressId(addr.id)}
-                        className="addr-radio"
-                      />
-                      <div className="addr-details">
-                        <strong>{addr.label}</strong>: {addr.line1}, {addr.city}, {addr.state}
-                      </div>
-                    </div>
-                  ))
-                ) : !showAddressForm ? (
-                  <p style={{ fontSize: '0.85rem', color: '#6b7280' }}>No saved addresses found. Please add a delivery address.</p>
-                ) : null}
-
-                {/* Inline Address Form */}
-                {showAddressForm && (
-                  <form onSubmit={handleAddAddress} style={{ background: '#f9fafb', padding: '1rem', borderRadius: '10px', marginTop: '0.75rem' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                      <input
-                        type="text"
-                        placeholder="Address Line (e.g. 12 Marina Road)"
-                        value={newAddress.line1}
-                        onChange={e => setNewAddress({ ...newAddress, line1: e.target.value })}
-                        required
-                        style={{ padding: '0.6rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.85rem' }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="City (e.g. Ikeja)"
-                        value={newAddress.city}
-                        onChange={e => setNewAddress({ ...newAddress, city: e.target.value })}
-                        required
-                        style={{ padding: '0.6rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.85rem' }}
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      style={{ background: '#005b9f', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      Save & Use Address
-                    </button>
-                  </form>
                 )}
               </div>
-            )}
+
+              {!token && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                  <input type="text" placeholder="Full Name" value={guestName} onChange={e => setGuestName(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
+                  <input type="email" placeholder="Email Address (for Digital Receipt)" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
+                  <input type="tel" placeholder="Phone Number" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
+                  <div style={{ height: '1px', background: '#e5e7eb', margin: '0.5rem 0' }} />
+                  <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>📍 Delivery Destination</h4>
+                </div>
+              )}
+
+              {token && loadingAddresses ? (
+                <p style={{ fontSize: '0.85rem', color: '#6b7280' }}>Loading saved addresses...</p>
+              ) : token && addresses.length > 0 ? (
+                addresses.map(addr => (
+                  <div key={addr.id} className={`addr-card ${selectedAddressId === addr.id ? 'selected' : ''}`} onClick={() => setSelectedAddressId(addr.id)}>
+                    <input type="radio" checked={selectedAddressId === addr.id} readOnly className="addr-radio" />
+                    <div className="addr-details"><strong>{addr.label}</strong>: {addr.line1}, {addr.city}</div>
+                  </div>
+                ))
+              ) : null}
+
+              {(!token || showAddressForm || (addresses.length === 0 && !loadingAddresses)) && (
+                <div style={{ background: '#f9fafb', padding: '1rem', borderRadius: '10px', marginTop: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Enter new address</span>
+                    <button type="button" onClick={handleLocateMe} style={{ background: '#f3f4f6', border: '1px solid #d1d5db', color: '#374151', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      🌍 Use Current Location
+                    </button>
+                  </div>
+                  {geoStatus && <div style={{ fontSize: '0.8rem', color: '#005b9f', marginBottom: '0.75rem' }}>{geoStatus}</div>}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
+                    <input type="text" placeholder="Address Line (e.g. 12 Marina Road)" value={newAddress.line1} onChange={e => setNewAddress({ ...newAddress, line1: e.target.value })} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.85rem' }} />
+                    <input type="text" placeholder="City (e.g. Ikeja)" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.85rem' }} />
+                  </div>
+                  {token && (
+                     <button type="button" onClick={handleAddAddress} style={{ background: '#005b9f', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', marginTop: '1rem' }}>
+                       Save & Use Address
+                     </button>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Cart Items */}
             <div className="cart-items">
@@ -300,19 +316,18 @@ export default function CartPage() {
               </p>
             )}
 
-            {!token ? (
-              <>
-                <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '1rem', textAlign: 'center' }}>Sign in to complete your checkout</p>
-                <button className="cart-checkout-btn" onClick={() => router.push('/login')}>Sign In to Checkout</button>
-              </>
-            ) : (
-              <button
-                className="cart-checkout-btn"
-                onClick={handleProceedToCheckout}
-                disabled={placingOrder}
-              >
-                {placingOrder ? 'Processing Order...' : 'Pay with Paystack'}
-              </button>
+            <button
+              className="cart-checkout-btn"
+              onClick={handleProceedToCheckout}
+              disabled={placingOrder}
+            >
+              {placingOrder ? 'Processing Order...' : 'Pay with Paystack'}
+            </button>
+            
+            {!token && (
+               <p style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '1rem', textAlign: 'center' }}>
+                 Or <a href="/login" style={{ color: '#005b9f' }}>Sign in</a> to save your address.
+               </p>
             )}
 
             <button

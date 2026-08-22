@@ -5,8 +5,12 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [statusMsg, setStatusMsg] = useState('');
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setStatusMsg('');
     try {
       const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
         method: 'POST',
@@ -21,6 +25,8 @@ export default function ForgotPassword() {
       }
     } catch (err) {
       alert('Backend connection failed - Server offline');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -37,10 +43,12 @@ export default function ForgotPassword() {
         <form onSubmit={handleReset} className="auth-form">
           <div className="form-group">
             <label>Registered Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@example.com" disabled={isLoading} />
           </div>
           
-          <button type="submit" className="auth-btn">Send Recovery Link</button>
+          <button type="submit" className="auth-btn" disabled={isLoading}>
+             {isLoading ? 'Sending...' : 'Send Recovery Link'}
+          </button>
         </form>
         
         <div className="auth-footer">
