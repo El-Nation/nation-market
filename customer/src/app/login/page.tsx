@@ -31,7 +31,7 @@ export default function Login() {
       const data = await res.json();
       if (data.success) {
         loginAction(data.data, data.data.token);
-        if (data.data.role === 'ADMIN') router.push(`http://localhost:3002?token=${data.data.token}&role=ADMIN`);
+        if (data.data.role === 'ADMIN') window.location.href = `http://localhost:3002?token=${data.data.token}&role=ADMIN`;
         else if (data.data.role === 'VENDOR') window.location.href = `http://localhost:3001?token=${data.data.token}&role=VENDOR`;
         else if (data.data.role === 'RIDER') window.location.href = '/rider/dashboard';
         else router.push('/dashboard');

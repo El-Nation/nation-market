@@ -9,7 +9,7 @@ import {
 
 export default function RiderDashboard() {
   const router = useRouter();
-  const { user, token, logout } = useAuthStore();
+  const { user, token, logout, initialized, initAuth } = useAuthStore();
   const [authorized, setAuthorized] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [activeTab, setActiveTab] = useState('Hub');
@@ -30,12 +30,17 @@ export default function RiderDashboard() {
 
   useEffect(() => {
     setIsMounted(true);
+    if (!initialized) {
+      initAuth();
+      return;
+    }
+    
     if (!token || user?.role !== 'RIDER') {
       window.location.href = '/login';
     } else {
       setAuthorized(true);
     }
-  }, [token, user]);
+  }, [initialized, token, user, initAuth]);
 
   const fetchAvailable = useCallback(async () => {
     setAvailableLoading(true);

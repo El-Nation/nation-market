@@ -437,10 +437,22 @@ export default function Home() {
           <div className="tab-pane fade-in">
             {/* Same metrics grid */}
             <div className="metrics-grid">
-              <div className="metric-card"><div className="metric-icon bg-blue-100 text-blue-600"><DollarSign size={24} /></div><div><h4>Total Revenue</h4><div className="metric-val">₦ 0.00</div></div></div>
-              <div className="metric-card"><div className="metric-icon bg-green-100 text-green-600"><ListOrdered size={24} /></div><div><h4>Pending Orders</h4><div className="metric-val">0</div></div></div>
-              <div className="metric-card"><div className="metric-icon bg-purple-100 text-purple-600"><Package size={24} /></div><div><h4>Active Products</h4><div className="metric-val">{vendorProducts.length}</div></div></div>
-              <div className="metric-card"><div className="metric-icon bg-yellow-100 text-yellow-600"><Star size={24} /></div><div><h4>Store Rating</h4><div className="metric-val">N/A</div></div></div>
+              <div className="metric-card" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('Payments')} title="View Earnings & Payouts">
+                <div className="metric-icon bg-blue-100 text-blue-600"><DollarSign size={24} /></div>
+                <div><h4>Total Revenue</h4><div className="metric-val">₦ 0.00</div></div>
+              </div>
+              <div className="metric-card" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('Orders')} title="View Orders & Fulfillment">
+                <div className="metric-icon bg-green-100 text-green-600"><ListOrdered size={24} /></div>
+                <div><h4>Pending Orders</h4><div className="metric-val">0</div></div>
+              </div>
+              <div className="metric-card" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('Products')} title="View Products Catalog">
+                <div className="metric-icon bg-purple-100 text-purple-600"><Package size={24} /></div>
+                <div><h4>Active Products</h4><div className="metric-val">{vendorProducts.length}</div></div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-icon bg-yellow-100 text-yellow-600"><Star size={24} /></div>
+                <div><h4>Store Rating</h4><div className="metric-val">N/A</div></div>
+              </div>
             </div>
           </div>
         )}
