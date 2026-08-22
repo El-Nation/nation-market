@@ -2,264 +2,270 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useCartStore } from '../../../store/cartStore';
+import { useAuthStore } from '../../../store/authStore';
 
-const API = 'http://localhost:5000/api/storefront';
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 interface Subcategory { id: string; name: string; slug: string; }
 interface Category { id: string; name: string; slug: string; subcategories: Subcategory[]; }
-interface Product { id: string; name: string; price: number; discount: number; images: string; unit?: string; isAvailable: boolean; vendor: { id: string; storeName: string }; }
-interface Vendor { id: string; storeName: string; logoUrl?: string; coverUrl?: string; businessType: string; address?: string; }
-
-const CATEGORY_ICONS: Record<string, string> = {
-  'Supermarket & Groceries': '🛒', 'Fashion & Beauty': '👗', 'Electronics & Gadgets': '📱',
-  'Restaurants & Food': '🍽️', 'Agriculture & Farming': '🌾', 'Pharmacy & Health': '💊',
-  'Books & Education': '📚', 'Home, Kitchen & Furniture': '🏠', 'Automotive, Tools & Industrial': '🔧', 'Toys, Kids & Babies': '🧸',
-};
+interface Vendor { id: string; storeName: string; logoUrl?: string; coverUrl?: string; businessType: string; address?: string; rating?: number; deliveryFee?: number; deliveryTime?: string; }
 
 function optimizeImg(url: string, w = 400) {
   if (!url || !url.includes('cloudinary.com')) return url;
   return url.replace('/upload/', `/upload/w_${w},c_limit,f_auto,q_auto/`);
 }
 
-export default function CategoryPage() {
+export default function MobileCategoryPage() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
-  const { addItem, totalItems, initCart } = useCartStore();
+  const { totalItems } = useCartStore();
 
   const [category, setCategory] = useState<Category | null>(null);
   const [activeSub, setActiveSub] = useState<string>('');
-  const [products, setProducts] = useState<Product[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addedId, setAddedId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isMounted, setIsMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    setIsMounted(true);
-    initCart();
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const sub = urlParams.get('sub');
-      if (sub) setActiveSub(sub);
-    }
-  }, [initCart]);
+  // Floating Nav Dock
+  const [activeTab, setActiveTab] = useState('Home');
 
   useEffect(() => {
     fetchCategory();
   }, [params.slug]);
 
   useEffect(() => {
-    if (category) {
-      fetchResults();
-      fetchVendors();
-    }
-  }, [category, activeSub, page]);
+    if (category) fetchVendors();
+  }, [category, activeSub]);
 
   async function fetchCategory() {
-    const res = await fetch(`${API}/categories`);
-    const data = await res.json();
-    if (data.success) {
-      const found = data.data.find((c: Category) => c.slug === params.slug);
-      setCategory(found || null);
+    try {
+      const res = await fetch(`${API}/storefront/categories`);
+      const data = await res.json();
+      if (data.success) {
+        const found = data.data.find((c: Category) => c.slug === params.slug);
+        setCategory(found || null);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }
-
-  async function fetchResults() {
-    setLoading(true);
-    const url = new URL(`${API}/products`);
-    url.searchParams.set('category', params.slug);
-    if (activeSub) url.searchParams.set('subcategory', activeSub);
-    url.searchParams.set('page', String(page));
-    url.searchParams.set('limit', '24');
-    const res = await fetch(url.toString());
-    const data = await res.json();
-    if (data.success) {
-      setProducts(data.data);
-      setTotalPages(data.pages || 1);
-    }
-    setLoading(false);
   }
 
   async function fetchVendors() {
-    const res = await fetch(`${API}/vendors?category=${encodeURIComponent(category!.name)}&limit=8`);
-    const data = await res.json();
-    if (data.success) setVendors(data.data);
+    if (!category) return;
+    setLoading(true);
+    let url = `${API}/storefront/vendors?category=${encodeURIComponent(category.name)}&limit=20`;
+    if (activeSub) url += `&subcategory=${encodeURIComponent(activeSub)}`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.success) {
+        let v = data.data as Vendor[];
+        // Mocking metadata if missing to match mockup exactly
+        v = v.map(vx => ({
+          ...vx,
+          rating: vx.rating || 5.0,
+          deliveryFee: vx.deliveryFee || 1000,
+          deliveryTime: vx.deliveryTime || '9 - 19 min'
+        }));
+        setVendors(v);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function handleAddToCart(p: Product) {
-    addItem({ productId: p.id, vendorId: p.vendor.id, vendorName: p.vendor.storeName, name: p.name, price: p.price, discount: p.discount, image: p.images, unit: p.unit });
-    setAddedId(p.id);
-    setTimeout(() => setAddedId(null), 1500);
-  }
-
+  const filteredVendors = vendors.filter(v => v.storeName.toLowerCase().includes(searchQuery.toLowerCase()));
   const cartCount = totalItems();
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: #f8f9fa; }
-        .cat-header { background: #fff; border-bottom: 1px solid #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
-        .cat-header-inner { max-width: 1280px; margin: 0 auto; padding: 0.5rem 1.5rem; min-height: 66px; display: flex; align-items: center; gap: 1rem; }
-        .cat-back { font-size: 0.9rem; color: #005b9f; text-decoration: none; font-weight: 600; }
-        .cat-logo { height: 52px; width: auto; max-width: 220px; object-fit: contain; cursor: pointer; }
-        .cat-cart { margin-left: auto; background: #005b9f; color: #fff; border: none; border-radius: 8px; padding: 0.45rem 1rem; cursor: pointer; font-weight: 600; font-size: 0.85rem; position: relative; }
-        .cat-cart-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: #fff; border-radius: 99px; width: 16px; height: 16px; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-        .cat-hero { background: linear-gradient(135deg, #003d6b, #005b9f); color: #fff; padding: 2.5rem 1.5rem; }
-        .cat-hero-inner { max-width: 1280px; margin: 0 auto; }
-        .cat-hero h1 { font-size: clamp(1.6rem, 4vw, 2.5rem); font-weight: 800; margin-bottom: 0.5rem; }
-        .cat-hero p { opacity: 0.8; font-size: 0.95rem; }
-        .cat-layout { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; display: grid; grid-template-columns: 220px 1fr; gap: 2rem; }
-        .cat-sidebar { background: #fff; border-radius: 14px; border: 1px solid #f0f0f0; padding: 1.25rem; height: fit-content; position: sticky; top: 80px; }
-        .cat-sidebar h3 { font-size: 0.85rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
-        .cat-sub-btn { width: 100%; text-align: left; background: none; border: none; padding: 0.55rem 0.75rem; border-radius: 8px; font-size: 0.88rem; color: #333; cursor: pointer; transition: all 0.15s; font-family: inherit; }
-        .cat-sub-btn:hover { background: #f0f4f8; }
-        .cat-sub-btn.active { background: #eff6ff; color: #1d4ed8; font-weight: 600; }
-        .cat-main { flex: 1; min-width: 0; }
-        .cat-vendors-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-        .cat-vendor-card { background: #fff; border: 1px solid #f0f0f0; border-radius: 12px; overflow: hidden; cursor: pointer; text-decoration: none; transition: all 0.2s; }
-        .cat-vendor-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-1px); }
-        .cat-vendor-cover { width: 100%; height: 80px; object-fit: cover; background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
-        .cat-vendor-cover-ph { width: 100%; height: 80px; background: linear-gradient(135deg, #eff6ff, #dbeafe); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
-        .cat-vendor-name { padding: 0.5rem 0.75rem; font-size: 0.85rem; font-weight: 600; color: #111; }
-        .cat-products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; }
-        .cat-product-card { background: #fff; border: 1px solid #f0f0f0; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: all 0.2s; }
-        .cat-product-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
-        .cat-product-img { width: 100%; height: 160px; object-fit: cover; cursor: pointer; background: #f0f0f0; display: block; }
-        .cat-product-ph { width: 100%; height: 160px; background: linear-gradient(135deg, #f0f4f8, #e2e8f0); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
-        .cat-product-body { padding: 0.8rem; flex: 1; display: flex; flex-direction: column; }
-        .cat-product-name { font-size: 0.87rem; font-weight: 600; margin-bottom: 0.25rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .cat-product-vendor { font-size: 0.75rem; color: #6b7280; margin-bottom: 0.5rem; }
-        .cat-product-price { font-size: 0.95rem; font-weight: 800; color: #005b9f; }
-        .cat-add-btn { margin-top: auto; padding-top: 0.6rem; background: #005b9f; color: #fff; border: none; border-radius: 7px; padding: 0.5rem; font-size: 0.83rem; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; font-family: inherit; }
-        .cat-add-btn:hover { background: #004a82; }
-        .cat-add-btn.added { background: #16a34a; }
-        .cat-pagination { display: flex; gap: 0.5rem; justify-content: center; margin-top: 2rem; }
-        .cat-page-btn { padding: 0.5rem 1rem; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; cursor: pointer; font-size: 0.88rem; transition: all 0.15s; font-family: inherit; }
-        .cat-page-btn.active { background: #005b9f; color: #fff; border-color: #005b9f; }
-        .cat-page-btn:hover:not(.active) { background: #f4f6f8; }
-        .cat-empty { text-align: center; padding: 4rem 2rem; color: #9ca3af; }
-        @media (max-width: 768px) {
-          .cat-layout { grid-template-columns: 1fr; }
-          .cat-sidebar { position: static; }
-          .cat-sub-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-          .cat-sub-btn { width: auto; }
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #ffffff; color: #0f172a; padding-bottom: 90px; }
+        
+        /* 1. Header Row */
+        .cat-app-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; position: sticky; top: 0; background: #fff; z-index: 100; }
+        .cat-header-left { display: flex; align-items: center; gap: 0.75rem; }
+        .back-btn { font-size: 1.2rem; font-weight: 700; background: none; border: none; cursor: pointer; color: #111; }
+        .cat-title { font-size: 1.15rem; font-weight: 800; color: #111; }
+        .location-pill { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; font-weight: 600; color: #111; cursor: pointer; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .loc-icon { color: #10b981; }
+
+        /* 2. Subcategory Horizontal Pills */
+        .subcat-track { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.5rem 1.25rem 1rem; scrollbar-width: none; }
+        .subcat-track::-webkit-scrollbar { display: none; }
+        .subcat-pill { padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; white-space: nowrap; cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; }
+        .subcat-pill.active { background: #e6f6f2; color: #059669; border: 1px solid #059669; }
+        .subcat-pill:not(.active) { background: #fff; color: #64748b; border: 1px solid #fff; }
+
+        /* 3. Search Bar */
+        .search-container { padding: 0 1.25rem 1.25rem; }
+        .search-box { display: flex; align-items: center; background: #f8fafc; border-radius: 12px; padding: 0.85rem 1rem; gap: 0.5rem; }
+        .search-icon { color: #94a3b8; font-size: 1.1rem; }
+        .search-input { border: none; background: transparent; w-full; font-size: 0.9rem; outline: none; width: 100%; font-family: inherit; color: #333; }
+
+        /* 4. Main Vendor List */
+        .main-content { padding: 0 1.25rem; max-width: 800px; margin: 0 auto; }
+        .section-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 1.25rem; color: #111; }
+        
+        .vendor-list { display: flex; flex-direction: column; gap: 2rem; }
+        .vendor-card { text-decoration: none; display: flex; flex-direction: column; gap: 0.6rem; cursor: pointer; transition: opacity 0.2s; }
+        .vendor-card:hover { opacity: 0.9; }
+        
+        .vendor-cover-wrap { width: 100%; height: 160px; border-radius: 14px; overflow: hidden; background: #f1f5f9; position: relative; }
+        .vendor-cover { width: 100%; height: 100%; object-fit: cover; }
+        .vendor-cover-ph { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0fdf4, #dcfce7); }
+        .ph-logo { height: 60px; width: 60px; object-fit: cover; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 0.5rem; }
+        
+        .vendor-meta-row { display: flex; align-items: flex-start; justify-content: space-between; }
+        .vendor-name { font-size: 1.05rem; font-weight: 800; color: #111; display: flex; align-items: center; gap: 0.4rem; }
+        .verified-badge { color: #10b981; font-size: 1rem; }
+        .heart-icon { color: #64748b; font-size: 1.2rem; cursor: pointer; }
+        
+        .vendor-stats { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #475569; font-weight: 600; margin-top: 0.25rem; }
+        .stat-left { display: flex; align-items: center; gap: 0.5rem; }
+        .scooter-icon { font-size: 1.1rem; }
+        .stat-divider { width: 1px; height: 12px; background: #cbd5e1; }
+        .stat-right { display: flex; align-items: center; gap: 0.35rem; }
+        .star-icon { color: #fbbf24; font-size: 1rem; }
+
+        /* 5. Mobile Global Dock */
+        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #f8fafc; padding: 0.5rem 1rem; z-index: 1000; display: flex; justify-content: center; }
+        .dock-inner { background: #fff; border-radius: 99px; display: flex; width: 100%; max-width: 480px; justify-content: space-around; padding: 0.4rem 0.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #f1f5f9; }
+        .dock-btn { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; background: none; border: none; cursor: pointer; padding: 0.5rem 1rem; border-radius: 99px; transition: all 0.2s; position: relative; text-decoration: none; }
+        .dock-btn:hover { background: #f1f5f9; }
+        .dock-btn.active { background: #059669; }
+        .dock-icon { font-size: 1.25rem; }
+        .dock-btn.active .dock-icon { display: none; } /* Show something else or change color */
+        .dock-label { font-size: 0.72rem; font-weight: 700; color: #94a3b8; }
+        .dock-btn.active .dock-label { color: #fff; font-size: 0.8rem; }
+        .dock-badge { position: absolute; top: 0px; right: 6px; background: #fbbf24; color: #111; font-size: 0.65rem; font-weight: 800; height: 20px; width: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
       `}</style>
 
-      {/* Header */}
-      <header className="cat-header">
-        <div className="cat-header-inner">
-          <a href="/" className="cat-back">← Back</a>
-          <img src="/logo.png" alt="NATION MARKET" className="cat-logo" onClick={() => router.push('/')} style={{cursor:'pointer'}} />
-          <button className="cat-cart" onClick={() => router.push('/cart')}>
-            🛒 Cart {cartCount > 0 && <span className="cat-cart-badge">{cartCount}</span>}
-          </button>
+      {/* 1. Header */}
+      <header className="cat-app-header">
+        <div className="cat-header-left">
+          <button className="back-btn" onClick={() => router.push('/')}>←</button>
+          <div className="cat-title">{category?.name || 'Loading...'}</div>
+        </div>
+        <div className="location-pill">
+          <span className="loc-icon">📍</span> 29 Imatitikua, Uselu... <span>⌄</span>
         </div>
       </header>
 
-      {/* Hero */}
+      {/* 2. Subcategory Pills */}
       {category && (
-        <div className="cat-hero">
-          <div className="cat-hero-inner">
-            <h1>{CATEGORY_ICONS[category.name] || '🏪'} {category.name}</h1>
-            <p>{category.subcategories.length} subcategories · Browse and discover from trusted vendors</p>
-          </div>
+        <div className="subcat-track">
+          <button className={`subcat-pill ${activeSub === '' ? 'active' : ''}`} onClick={() => setActiveSub('')}>
+            All
+          </button>
+          {category.subcategories.map(sub => (
+            <button key={sub.id} className={`subcat-pill ${activeSub === sub.slug ? 'active' : ''}`} onClick={() => setActiveSub(sub.slug)}>
+              {sub.name}
+            </button>
+          ))}
         </div>
       )}
 
-      <div className="cat-layout">
-        {/* Sidebar */}
-        <aside className="cat-sidebar">
-          <h3>Subcategories</h3>
-          <div className="cat-sub-list">
-            <button className={`cat-sub-btn ${activeSub === '' ? 'active' : ''}`} onClick={() => { setActiveSub(''); setPage(1); }}>
-              All Products
-            </button>
-            {category?.subcategories.map(sub => (
-              <button
-                key={sub.id}
-                className={`cat-sub-btn ${activeSub === sub.slug ? 'active' : ''}`}
-                onClick={() => { setActiveSub(sub.slug); setPage(1); }}
-              >
-                {sub.name}
-              </button>
-            ))}
-          </div>
-        </aside>
+      {/* 3. Search */}
+      <div className="search-container">
+        <div className="search-box">
+          <span className="search-icon">🔍</span>
+          <input 
+            type="text" 
+            className="search-input" 
+            placeholder={category?.name === 'Pharmacy & Health' ? 'Painkillers, Cough syrup etc.' : 'Clothing, electronics, groceries, etc'}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
 
-        {/* Main */}
-        <main className="cat-main">
-          {/* Vendors in this category */}
-          {vendors.length > 0 && (
-            <>
-              <h2 style={{fontSize:'1rem',fontWeight:700,marginBottom:'0.75rem',color:'#111'}}>Stores in {category?.name}</h2>
-              <div className="cat-vendors-row">
-                {vendors.map(v => (
-                  <a key={v.id} href={`/store/${v.id}`} className="cat-vendor-card">
-                    {v.coverUrl
-                      ? <img src={optimizeImg(v.coverUrl, 400)} className="cat-vendor-cover" loading="lazy" alt="" />
-                      : <div className="cat-vendor-cover-ph">{CATEGORY_ICONS[v.businessType] || '🏪'}</div>
-                    }
-                    <div className="cat-vendor-name">{v.storeName}</div>
-                  </a>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Products */}
-          <h2 style={{fontSize:'1rem',fontWeight:700,marginBottom:'0.75rem',color:'#111'}}>
-            Products {activeSub && category && `· ${category.subcategories.find(s => s.slug === activeSub)?.name}`}
-          </h2>
-          {loading ? (
-            <div className="cat-empty"><p>Loading products...</p></div>
-          ) : products.length === 0 ? (
-            <div className="cat-empty">
-              <div style={{fontSize:'2.5rem',marginBottom:'0.75rem'}}>📦</div>
-              <p>No products available yet in this {activeSub ? 'subcategory' : 'category'}.</p>
-            </div>
-          ) : (
-            <>
-              <div className="cat-products-grid">
-                {products.map(p => (
-                  <div key={p.id} className="cat-product-card">
-                    {p.images
-                      ? <img src={optimizeImg(p.images, 400)} className="cat-product-img" loading="lazy" alt={p.name} onClick={() => router.push(`/product/${p.id}`)} />
-                      : <div className="cat-product-ph">🛍️</div>
-                    }
-                    <div className="cat-product-body">
-                      <div className="cat-product-name">{p.name}</div>
-                      <div className="cat-product-vendor">from {p.vendor.storeName}</div>
-                      <div className="cat-product-price">
-                        ₦{p.discount > 0 ? (p.price * (1 - p.discount/100)).toLocaleString(undefined,{maximumFractionDigits:0}) : p.price.toLocaleString()}
-                        {p.discount > 0 && <span style={{color:'#9ca3af',textDecoration:'line-through',fontSize:'0.75rem',marginLeft:'0.35rem'}}>₦{p.price.toLocaleString()}</span>}
-                      </div>
-                      <button
-                        className={`cat-add-btn ${addedId === p.id ? 'added' : ''}`}
-                        style={{marginTop:'0.75rem'}}
-                        onClick={() => handleAddToCart(p)}
-                      >
-                        {addedId === p.id ? '✓ Added!' : '+ Add to Cart'}
-                      </button>
+      {/* 4. Main Content (Vendors) */}
+      <main className="main-content">
+        <h2 className="section-title">All {category?.name || 'Vendors'}</h2>
+        
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94a3b8' }}>Loading stores...</div>
+        ) : filteredVendors.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94a3b8' }}>No stores found.</div>
+        ) : (
+          <div className="vendor-list">
+            {filteredVendors.map(vendor => (
+              <a key={vendor.id} href={`/store/${vendor.id}`} className="vendor-card">
+                <div className="vendor-cover-wrap">
+                  {vendor.coverUrl ? (
+                    <img src={optimizeImg(vendor.coverUrl, 800)} alt={vendor.storeName} className="vendor-cover" />
+                  ) : (
+                    <div className="vendor-cover-ph">
+                      {vendor.logoUrl ? (
+                        <img src={optimizeImg(vendor.logoUrl, 200)} alt={vendor.storeName} className="ph-logo" />
+                      ) : (
+                        <span style={{ fontSize: '3rem' }}>🏬</span>
+                      )}
+                      <h3 style={{ color: '#064e3b', opacity: 0.8 }}>{vendor.storeName}</h3>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="vendor-info">
+                  <div className="vendor-meta-row">
+                    <div className="vendor-name">
+                      {vendor.storeName}
+                      <span className="verified-badge">✿</span>
+                    </div>
+                    <span className="heart-icon">♡</span>
+                  </div>
+                  
+                  <div className="vendor-stats">
+                    <div className="stat-left">
+                      <span className="scooter-icon">🛵</span>
+                      <span>From ₦{vendor.deliveryFee?.toLocaleString()}</span>
+                      <span className="stat-divider"></span>
+                      <span>{vendor.deliveryTime}</span>
+                    </div>
+                    <div className="stat-right">
+                      <span className="star-icon">★</span>
+                      <span>{vendor.rating?.toFixed(1)} (1)</span>
                     </div>
                   </div>
-                ))}
-              </div>
-              {totalPages > 1 && (
-                <div className="cat-pagination">
-                  {Array.from({length: totalPages}, (_, i) => i + 1).map(n => (
-                    <button key={n} className={`cat-page-btn ${page === n ? 'active' : ''}`} onClick={() => setPage(n)}>{n}</button>
-                  ))}
                 </div>
-              )}
-            </>
-          )}
-        </main>
+              </a>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* 5. App Dock */}
+      <div className="dock-bar">
+        <div className="dock-inner">
+          <a href="/" className={`dock-btn ${activeTab === 'Home' ? 'active' : ''}`} onClick={(e) => {e.preventDefault(); router.push('/');}}>
+            <span className="dock-icon">🛋️</span>
+            <span className="dock-label">Home</span>
+          </a>
+          <button className={`dock-btn ${activeTab === 'Search' ? 'active' : ''}`} onClick={() => document.querySelector('.search-input')?.dispatchEvent(new Event('focus'))}>
+            <span className="dock-icon">🔭</span>
+            <span className="dock-label">Search</span>
+          </button>
+          <a href="/cart" className={`dock-btn ${activeTab === 'Orders' ? 'active' : ''}`}>
+            <span className="dock-icon">📦</span>
+            {cartCount > 0 && <div className="dock-badge">{cartCount}</div>}
+            <span className="dock-label">Orders</span>
+          </a>
+          <button className={`dock-btn ${activeTab === 'Support' ? 'active' : ''}`}>
+            <span className="dock-icon">🎧</span>
+            <span className="dock-label">Support</span>
+          </button>
+          <a href="/dashboard" className={`dock-btn ${activeTab === 'Profile' ? 'active' : ''}`}>
+            <span className="dock-icon">🤡</span>
+            <span className="dock-label">Profile</span>
+          </a>
+        </div>
       </div>
     </>
   );

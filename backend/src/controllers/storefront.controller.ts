@@ -15,11 +15,12 @@ export const getCategories = async (req: Request, res: Response) => {
 // ─── GET /api/storefront/vendors ─────────────────────────────────────────────
 export const getVendors = async (req: Request, res: Response) => {
   try {
-    const { category, search, page = '1', limit = '20' } = req.query as Record<string, string>;
+    const { category, subcategory, search, page = '1', limit = '20' } = req.query as Record<string, string>;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const where: any = { status: 'ACTIVE', isRegistered: true };
     if (category) where.businessType = category;
+    if (subcategory) where.subcategories = { some: { slug: subcategory } };
     if (search) where.storeName = { contains: search };
 
     const [vendors, total] = await Promise.all([

@@ -4,43 +4,40 @@ import { useCartStore } from '../../store/cartStore';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../store/authStore';
 
-export default function CartPage() {
-  const { items, removeItem, updateQty, clearCart, subtotal } = useCartStore();
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+export default function MobileGroupedCartPage() {
+  const { items, removeItem, updateQty, clearCart } = useCartStore();
   const { token } = useAuthStore();
   const router = useRouter();
 
+  // Active Bottom Nav Tab for layout parity
+  const [activeTab, setActiveTab] = useState('Orders');
+
+  // Address State
   const [addresses, setAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
-  const [loadingAddresses, setLoadingAddresses] = useState(false);
-  const [placingOrder, setPlacingOrder] = useState(false);
-  const [orderError, setOrderError] = useState('');
-
-  // Guest fields
-  const [guestEmail, setGuestEmail] = useState('');
-  const [guestName, setGuestName] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
-
-  // Geolocation
-  const [geoStatus, setGeoStatus] = useState('');
-
-  // New Address inline form
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [newAddress, setNewAddress] = useState({ label: 'Home', line1: '', line2: '', city: 'Lagos', state: 'Lagos' });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+  // Guest State
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [geoStatus, setGeoStatus] = useState('');
 
+  const [loadingVendorId, setLoadingVendorId] = useState<string | null>(null);
+  const [orderError, setOrderError] = useState('');
+  
+  // Hardcoded fees per block
   const DELIVERY_FEE = 1500;
   const PLATFORM_FEE = 500;
-  const total = subtotal() + DELIVERY_FEE + PLATFORM_FEE;
 
   useEffect(() => {
     if (!token) return;
     async function fetchAddresses() {
-      setLoadingAddresses(true);
       try {
-        const res = await fetch(`${API_URL}/customer/addresses`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await fetch(`${API_URL}/customer/addresses`, { headers: { Authorization: `Bearer ${token}` } });
         const data = await res.json();
         if (data.success && data.data) {
           setAddresses(data.data);
@@ -48,37 +45,32 @@ export default function CartPage() {
           if (defaultAddr) setSelectedAddressId(defaultAddr.id);
         }
       } catch (err) {
-        console.error('Failed to fetch addresses:', err);
-      } finally {
-        setLoadingAddresses(false);
+        console.error(err);
       }
     }
     fetchAddresses();
-  }, [token, API_URL]);
+  }, [token]);
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {
-      setGeoStatus('Geolocation not supported by your browser.');
+      setGeoStatus('Geolocation not supported.');
       return;
     }
     setGeoStatus('Locating...');
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGeoStatus('Location found!');
-        setNewAddress(prev => ({ ...prev, line1: `${pos.coords.latitude}, ${pos.coords.longitude} (GPS Location)` }));
+      pos => {
+        setGeoStatus('Found!');
+        setNewAddress(p => ({ ...p, line1: `${pos.coords.latitude}, ${pos.coords.longitude} (GPS)` }));
         setShowAddressForm(true);
       },
-      (err) => {
-        setGeoStatus('Location access denied. Please enter manually.');
-      },
+      () => setGeoStatus('Denied.'),
       { timeout: 10000 }
     );
   };
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAddress.line1 || !newAddress.city) return;
-    if (!token) return; // Guests don't save returning addresses
+    if (!newAddress.line1 || !newAddress.city || !token) return;
     try {
       const res = await fetch(`${API_URL}/customer/addresses`, {
         method: 'POST',
@@ -90,31 +82,42 @@ export default function CartPage() {
         setAddresses([data.data, ...addresses]);
         setSelectedAddressId(data.data.id);
         setShowAddressForm(false);
-        setNewAddress({ label: 'Home', line1: '', line2: '', city: 'Lagos', state: 'Lagos' });
       }
-    } catch (err) {
-      console.error('Add address error:', err);
-    }
+    } catch(e) {}
   };
 
-  const handleProceedToCheckout = async () => {
-    if (items.length === 0) return;
+  // Group Items by Vendor
+  const groupedItems = items.reduce((acc, item) => {
+    if (!acc[item.vendorId]) acc[item.vendorId] = { vendorName: item.vendorName, items: [] };
+    acc[item.vendorId].items.push(item);
+    return acc;
+  }, {} as Record<string, { vendorName: string, items: any[] }>);
+
+  const vendorGroups = Object.entries(groupedItems);
+
+  const calculateSubtotal = (vendorItems: any[]) => {
+    return vendorItems.reduce((acc, i) => acc + (i.price * (1 - i.discount/100)) * i.quantity, 0);
+  };
+
+  const handleCheckoutByVendor = async (vendorId: string, vendorItems: any[]) => {
     if (!token && (!guestEmail || !guestName || !newAddress.line1)) {
-      setOrderError('Please provide all guest details and delivery address to continue.');
+      setOrderError('Please provide all guest details and delivery address at the top of the page.');
+      window.scrollTo(0,0);
       return;
     }
     if (token && addresses.length === 0 && !showAddressForm && !newAddress.line1) {
       setShowAddressForm(true);
-      setOrderError('Please provide a delivery address before proceeding.');
+      setOrderError('Please add a delivery address before checkout.');
+      window.scrollTo(0,0);
       return;
     }
 
-    setPlacingOrder(true);
     setOrderError('');
+    setLoadingVendorId(vendorId);
 
     try {
       const payload = {
-        items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+        items: vendorItems.map(i => ({ productId: i.productId, quantity: i.quantity })),
         deliveryAddressId: selectedAddressId || undefined,
         deliveryAddress: (!selectedAddressId || !token) ? newAddress : undefined,
         guestEmail: !token ? guestEmail : undefined,
@@ -125,229 +128,275 @@ export default function CartPage() {
 
       const res = await fetch(`${API_URL}/customer/orders`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(payload)
       });
 
       const data = await res.json();
       if (data.success && data.data) {
-        clearCart();
+        vendorItems.forEach(i => removeItem(i.productId));
         if (data.data.paystackUrl) {
           window.location.href = data.data.paystackUrl;
         } else {
           router.push(`/checkout/success?reference=${data.data.reference}`);
         }
       } else {
-        setOrderError(data.message || 'Failed to place order.');
+        setOrderError(data.message || 'Failed to checkout vendor.');
       }
     } catch (err: any) {
-      setOrderError(err.message || 'Network error during checkout.');
+      setOrderError(err.message || 'Network error.');
     } finally {
-      setPlacingOrder(false);
+      setLoadingVendorId(null);
     }
   };
+  
+  const handleClearVendor = (vendorItems: any[]) => {
+    vendorItems.forEach(i => removeItem(i.productId));
+  };
+
+  const totalCartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: #f8f9fa; }
-        .cart-header { background: #fff; border-bottom: 1px solid #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .cart-header-inner { max-width: 1280px; margin: 0 auto; padding: 0 1.5rem; height: 64px; display: flex; align-items: center; justify-content: space-between; }
-        .cart-back { font-size: 0.88rem; color: #005b9f; font-weight: 600; text-decoration: none; }
-        .cart-logo { height: 44px; object-fit: contain; cursor: pointer; }
-        .cart-layout { max-width: 800px; margin: 2rem auto; padding: 0 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-        .cart-items { background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; overflow: hidden; }
-        .cart-items-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid #f5f5f5; font-weight: 800; font-size: 1rem; }
-        .cart-item { display: flex; gap: 1rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f5f5f5; align-items: center; }
-        .cart-item:last-child { border-bottom: none; }
-        .cart-item-img { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; background: #f0f0f0; flex-shrink: 0; }
-        .cart-item-img-ph { width: 64px; height: 64px; border-radius: 10px; background: linear-gradient(135deg, #e0e7f0, #c7d2e5); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
-        .cart-item-info { flex: 1; min-width: 0; }
-        .cart-item-name { font-weight: 600; font-size: 0.92rem; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .cart-item-vendor { font-size: 0.78rem; color: #6b7280; margin-bottom: 0.5rem; }
-        .cart-qty-row { display: flex; align-items: center; gap: 0.5rem; }
-        .cart-qty-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e5e7eb; background: #f4f6f8; cursor: pointer; font-size: 1rem; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background 0.15s; font-family: inherit; }
-        .cart-qty-btn:hover { background: #e5e7eb; }
-        .cart-qty { min-width: 2rem; text-align: center; font-weight: 600; font-size: 0.9rem; }
-        .cart-item-price { font-weight: 800; font-size: 0.95rem; color: #005b9f; white-space: nowrap; }
-        .cart-remove-btn { background: none; border: none; color: #ef4444; font-size: 0.8rem; cursor: pointer; font-family: inherit; margin-top: 0.25rem; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; color: #0f172a; padding-bottom: 90px; }
         
-        .address-box { background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; padding: 1.25rem 1.5rem; margin-bottom: 0; }
-        .address-box h3 { font-size: 0.95rem; font-weight: 800; margin-bottom: 0.75rem; color: #111827; }
-        .addr-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; transition: border 0.15s; }
-        .addr-card.selected { border-color: #005b9f; background: #f0f7ff; }
-        .addr-radio { accent-color: #005b9f; }
-        .addr-details { font-size: 0.85rem; color: #374151; }
+        .cart-app-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; background: #fff; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #f1f5f9; }
+        .cart-header-left { display: flex; align-items: center; gap: 0.75rem; }
+        .cart-title { font-size: 1.15rem; font-weight: 800; color: #111; }
+        .clear-cart-btn { background: #e0f2fe; color: #0369a1; border: none; padding: 0.4rem 0.8rem; border-radius: 99px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: background 0.15s; font-family: inherit; }
+        
+        .cart-tabs { display: flex; background: #fff; padding: 0.5rem 1.25rem; margin-bottom: 1rem; }
+        .tab-box { display: flex; width: 100%; background: #f1f5f9; border-radius: 12px; padding: 0.35rem; }
+        .tab-btn { flex: 1; text-align: center; padding: 0.5rem; font-size: 0.85rem; font-weight: 700; border-radius: 8px; cursor: pointer; border: none; background: transparent; color: #64748b; font-family: inherit; transition: all 0.2s; }
+        .tab-btn.active { background: #000; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        
+        .main-content { padding: 0 1.25rem; max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+        
+        .global-address-pane { background: #fff; padding: 1.25rem; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .input-grid { display: grid; grid-template-columns: 1fr; gap: 0.6rem; margin-top: 0.75rem; }
+        .input-base { padding: 0.75rem 1rem; border: 1.5px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 0.9rem; outline: none; transition: border 0.15s; width: 100%; }
+        .input-base:focus { border-color: #10b981; }
 
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+        .vendor-block { background: #fff; border-radius: 16px; border: 1px solid #f1f5f9; padding: 1.25rem; box-shadow: 0 4px 16px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 1rem; }
+        .vendor-block-header { display: flex; align-items: flex-start; gap: 0.8rem; border-bottom: 1px dashed #e2e8f0; padding-bottom: 1rem; }
+        .v-logo { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #f8fafc; }
+        .v-header-info { flex: 1; }
+        .v-name { font-size: 1rem; font-weight: 800; color: #111; margin-bottom: 0.25rem; }
+        .v-meta { font-size: 0.8rem; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; }
+        .v-meta-dot { font-size: 0.5rem; color: #cbd5e1; }
+        .v-view-btn { font-size: 0.8rem; font-weight: 700; color: #111; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; text-decoration: none; }
+        
+        .v-item { display: flex; align-items: center; gap: 0.85rem; padding: 0.75rem 0; }
+        .v-item-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #f1f5f9; }
+        .v-item-details { flex: 1; min-width: 0; }
+        .v-item-name { font-size: 0.85rem; font-weight: 700; color: #1e293b; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .v-item-price { font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-top: 0.2rem; }
+        
+        .v-qty-wrap { display: flex; align-items: center; gap: 0.65rem; background: #f8fafc; padding: 0.25rem; border-radius: 99px; }
+        .v-qty-btn { width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 1px solid #e2e8f0; color: #333; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        .v-deliver-wrap { display: flex; align-items: flex-start; gap: 0.65rem; background: #f8fafc; padding: 0.85rem; border-radius: 12px; margin-top: 0.5rem; }
+        .v-del-icon { font-size: 1.25rem; }
+        .v-del-text { font-size: 0.8rem; color: #334155; line-height: 1.4; font-weight: 500; }
+        
+        .v-checkout-btn { width: 100%; background: #064e3b; color: #fff; font-size: 0.95rem; font-weight: 800; padding: 1rem; border-radius: 12px; border: none; cursor: pointer; transition: opacity 0.2s; font-family: inherit; margin-top: 0.5rem; }
+        .v-checkout-btn:hover { opacity: 0.9; }
+        .v-checkout-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .v-clear-btn { width: 100%; background: transparent; color: #059669; font-size: 0.88rem; font-weight: 700; border: none; cursor: pointer; padding: 0.5rem; font-family: inherit; margin-top: 0.25rem; }
 
-        .cart-summary { background: #fff; border-radius: 16px; border: 1px solid #f0f0f0; padding: 1.5rem; height: fit-content; }
-        .cart-summary h3 { font-weight: 800; margin-bottom: 1.25rem; font-size: 1rem; }
-        .cart-summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 0.75rem; color: #4b5563; }
-        .cart-summary-row.total { font-weight: 800; font-size: 1.05rem; color: #111827; padding-top: 0.75rem; border-top: 1px solid #f0f0f0; }
-        .cart-checkout-btn { width: 100%; background: #005b9f; color: #fff; border: none; border-radius: 10px; padding: 0.95rem; font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 1.25rem; transition: background 0.2s; font-family: inherit; }
-        .cart-checkout-btn:disabled { background: #94a3b8; cursor: not-allowed; }
-        .cart-checkout-btn:hover:not(:disabled) { background: #004a82; }
-        
-        .cart-empty { text-align: center; padding: 5rem 2rem; }
-        .cart-empty-icon { font-size: 4rem; margin-bottom: 1rem; }
-        .cart-empty p { font-size: 1rem; color: #9ca3af; margin-bottom: 1.5rem; }
-        .cart-shop-btn { background: #005b9f; color: #fff; border: none; border-radius: 10px; padding: 0.8rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; font-family: inherit; }
-        
-        @media (max-width: 600px) {
-          .cart-layout { padding: 0 1rem; margin: 1rem auto; gap: 1rem; }
-          .cart-item { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-          .cart-item-img { width: 100%; height: 180px; }
-          .cart-item-img-ph { width: 100%; height: 180px; }
-          .form-grid { grid-template-columns: 1fr; }
-        }
+        .err-label { background: #fee2e2; color: #b91c1c; padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; text-align: center; margin-bottom: 1rem; border: 1px solid #fecaca; }
+
+        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #f8fafc; padding: 0.5rem 1rem; z-index: 1000; display: flex; justify-content: center; }
+        .dock-inner { background: #fff; border-radius: 99px; display: flex; width: 100%; max-width: 480px; justify-content: space-around; padding: 0.4rem 0.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #f1f5f9; }
+        .dock-btn { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; background: none; border: none; cursor: pointer; padding: 0.5rem 1rem; border-radius: 99px; transition: all 0.2s; position: relative; text-decoration: none; }
+        .dock-btn:hover { background: #f1f5f9; }
+        .dock-btn.active { background: #059669; }
+        .dock-icon { font-size: 1.25rem; }
+        .dock-btn.active .dock-icon { display: none; }
+        .dock-label { font-size: 0.72rem; font-weight: 700; color: #94a3b8; }
+        .dock-btn.active .dock-label { color: #fff; font-size: 0.8rem; }
+        .dock-badge { position: absolute; top: 0px; right: 6px; background: #fbbf24; color: #111; font-size: 0.65rem; font-weight: 800; height: 20px; width: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
       `}</style>
-
-      <header className="cart-header">
-        <div className="cart-header-inner">
-          <a href="/" className="cart-back">← Back to Marketplace</a>
-          <img src="/logo.png" alt="NATION MARKET" className="cart-logo" onClick={() => router.push('/')} />
+      
+      <header className="cart-app-header">
+        <div className="cart-header-left">
+          <button onClick={() => router.push('/')} style={{ background:'none',border:'none',fontSize:'1.2rem',cursor:'pointer' }}>←</button>
+          <div className="cart-title">Orders</div>
         </div>
+        {items.length > 0 && (
+          <button className="clear-cart-btn" onClick={clearCart}>Clear Cart</button>
+        )}
       </header>
 
-      <div style={{ maxWidth: '1060px', margin: '2rem auto 0', padding: '0 1.5rem' }}>
-        <h1 style={{ fontFamily: 'Inter,sans-serif', fontWeight: 800, fontSize: '1.5rem', marginBottom: '1.5rem' }}>🛒 Shopping Cart</h1>
+      <div className="cart-tabs">
+        <div className="tab-box">
+          <button className="tab-btn active">My Cart</button>
+          <button className="tab-btn">Ongoing</button>
+          <button className="tab-btn">Completed</button>
+        </div>
       </div>
 
-      {items.length === 0 ? (
-        <div className="cart-empty" style={{ fontFamily: 'Inter,sans-serif' }}>
-          <div className="cart-empty-icon">🛒</div>
-          <p>Your cart is empty. Discover products across every category.</p>
-          <button className="cart-shop-btn" onClick={() => router.push('/')}>Browse Marketplace</button>
-        </div>
-      ) : (
-        <div className="cart-layout">
-          <div>
-            <div className="address-box">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <h3>{token ? '📍 Delivery Address' : '👤 Guest Checkout Details'}</h3>
-                {token && (
-                  <button onClick={() => setShowAddressForm(!showAddressForm)} style={{ background: 'none', border: 'none', color: '#005b9f', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}>
-                    {showAddressForm ? 'Cancel' : '+ Add Address'}
-                  </button>
-                )}
-              </div>
+      <main className="main-content">
+        {orderError && <div className="err-label">{orderError}</div>}
 
+        {vendorGroups.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'4rem 1rem', color:'#64748b' }}>
+            <div style={{ fontSize:'3rem', marginBottom:'1rem' }}>🛍️</div>
+            <p style={{ fontWeight:600 }}>Your cart is empty.</p>
+          </div>
+        ) : (
+          <>
+            <div className="global-address-pane">
+              <h3 style={{ fontSize:'0.9rem', fontWeight:800, marginBottom:'0.5rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
+                <span style={{ fontSize:'1.2rem' }}>📍</span> Delivery Destination
+              </h3>
+              
               {!token && (
-                <>
-                  <div className="form-grid">
-                    <input type="text" placeholder="Full Name" value={guestName} onChange={e => setGuestName(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
-                    <input type="email" placeholder="Email Address (for Digital Receipt)" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
-                    <input type="tel" placeholder="Phone Number" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db' }} />
+                <div className="input-grid">
+                  <input type="text" className="input-base" placeholder="Guest Full Name" value={guestName} onChange={e => setGuestName(e.target.value)} />
+                  <input type="email" className="input-base" placeholder="Guest Email (For receipt)" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} />
+                  <input type="tel" className="input-base" placeholder="Guest Phone Number" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} />
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:'0.5rem' }}>
+                    <span style={{ fontSize:'0.8rem', fontWeight:600 }}>Address</span>
+                    <button type="button" onClick={handleLocateMe} style={{ background:'none',border:'none',color:'#059669',fontSize:'0.75rem',fontWeight:700,cursor:'pointer' }}>📍 Locate Me</button>
                   </div>
-                  <div style={{ height: '1px', background: '#e5e7eb', margin: '0.5rem 0 1rem' }} />
-                  <h4 style={{ fontSize: '0.9rem', marginBottom: '0.75rem' }}>📍 Delivery Destination</h4>
-                </>
-              )}
-
-              {token && loadingAddresses ? (
-                <p style={{ fontSize: '0.85rem', color: '#6b7280' }}>Loading saved addresses...</p>
-              ) : token && addresses.length > 0 ? (
-                addresses.map(addr => (
-                  <div key={addr.id} className={`addr-card ${selectedAddressId === addr.id ? 'selected' : ''}`} onClick={() => setSelectedAddressId(addr.id)}>
-                    <input type="radio" checked={selectedAddressId === addr.id} readOnly className="addr-radio" />
-                    <div className="addr-details"><strong>{addr.label}</strong>: {addr.line1}, {addr.city}</div>
-                  </div>
-                ))
-              ) : null}
-
-              {(!token || showAddressForm || (addresses.length === 0 && !loadingAddresses)) && (
-                <div style={{ background: '#f9fafb', padding: '1rem', borderRadius: '10px', marginTop: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Enter new address</span>
-                    <button type="button" onClick={handleLocateMe} style={{ background: '#f3f4f6', border: '1px solid #d1d5db', color: '#374151', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      🌍 Use Current Location
-                    </button>
-                  </div>
-                  {geoStatus && <div style={{ fontSize: '0.8rem', color: '#005b9f', marginBottom: '0.75rem' }}>{geoStatus}</div>}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
-                    <input type="text" placeholder="Address Line (e.g. 12 Marina Road)" value={newAddress.line1} onChange={e => setNewAddress({ ...newAddress, line1: e.target.value })} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.85rem' }} />
-                    <input type="text" placeholder="City (e.g. Ikeja)" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} required style={{ padding: '0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.85rem' }} />
-                  </div>
-                  {token && (
-                     <button type="button" onClick={handleAddAddress} style={{ background: '#005b9f', color: '#fff', border: 'none', padding: '0.6rem 1rem', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', marginTop: '1rem' }}>
-                       Save & Use Address
-                     </button>
-                  )}
+                  {geoStatus && <div style={{ fontSize:'0.75rem', color:'#10b981' }}>{geoStatus}</div>}
+                  <input type="text" className="input-base" placeholder="e.g. 29 Imatitikua, Uselu" value={newAddress.line1} onChange={e => setNewAddress({...newAddress, line1: e.target.value})} />
                 </div>
               )}
-            </div>
 
-            {/* Cart Items */}
-            <div className="cart-items">
-              <div className="cart-items-header">Items in Cart ({items.length})</div>
-              {items.map(item => {
-                const effectivePrice = item.discount > 0 ? item.price * (1 - item.discount / 100) : item.price;
-                return (
-                  <div key={item.productId} className="cart-item">
-                    {item.image?.includes('cloudinary.com')
-                      ? <img src={item.image.replace('/upload/', '/upload/w_120,c_fill,f_auto,q_auto/')} className="cart-item-img" alt="" loading="lazy" />
-                      : <div className="cart-item-img-ph">🛍️</div>
-                    }
-                    <div className="cart-item-info">
-                      <div className="cart-item-name">{item.name}</div>
-                      <div className="cart-item-vendor">from {item.vendorName}</div>
-                      <div className="cart-qty-row">
-                        <button className="cart-qty-btn" onClick={() => updateQty(item.productId, item.quantity - 1)}>−</button>
-                        <span className="cart-qty">{item.quantity}</span>
-                        <button className="cart-qty-btn" onClick={() => updateQty(item.productId, item.quantity + 1)}>+</button>
+              {token && (
+                <>
+                  {!showAddressForm ? (
+                     <>
+                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
+                        <span style={{ fontSize:'0.85rem' }}>Select an address:</span>
+                        <button type="button" onClick={() => setShowAddressForm(true)} style={{ background:'none',border:'none',color:'#059669',fontSize:'0.8rem',fontWeight:700,cursor:'pointer' }}>+ Add New</button>
+                     </div>
+                     {addresses.length === 0 && <span style={{ fontSize:'0.8rem', color:'#ef4444' }}>No addresses found.</span>}
+                     {addresses.map(addr => (
+                       <div key={addr.id} onClick={() => setSelectedAddressId(addr.id)} style={{ padding: '0.85rem', border: `1.5px solid ${selectedAddressId === addr.id ? '#10b981' : '#e2e8f0'}`, borderRadius: '8px', cursor: 'pointer', background: selectedAddressId === addr.id ? '#f0fdf4' : 'transparent', marginBottom: '0.5rem' }}>
+                         <div style={{ fontSize:'0.85rem', fontWeight:700 }}>{addr.line1}</div>
+                         <div style={{ fontSize:'0.75rem', color:'#64748b' }}>{addr.city}, {addr.state}</div>
+                       </div>
+                     ))}
+                     </>
+                  ) : (
+                    <form onSubmit={handleAddAddress}>
+                      <div className="input-grid">
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                          <label style={{ fontSize:'0.8rem', fontWeight:600 }}>Street Address</label>
+                          <button type="button" onClick={handleLocateMe} style={{ background:'none',border:'none',color:'#059669',fontSize:'0.75rem',fontWeight:700,cursor:'pointer' }}>📍 Locate Me</button>
+                        </div>
+                        {geoStatus && <div style={{ fontSize:'0.75rem', color:'#10b981' }}>{geoStatus}</div>}
+                        <input className="input-base" required value={newAddress.line1} onChange={e => setNewAddress({...newAddress, line1: e.target.value})} placeholder="12 Freedom Way" />
+                        <input className="input-base" required value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} placeholder="City" />
+                        <input className="input-base" required value={newAddress.state} onChange={e => setNewAddress({...newAddress, state: e.target.value})} placeholder="State" />
+                        <div style={{ display:'flex', gap:'0.5rem' }}>
+                           <button type="submit" style={{ flex:1, padding:'0.75rem', background:'#111', color:'#fff', borderRadius:'8px', fontWeight:600, border:'none', cursor:'pointer' }}>Save</button>
+                           <button type="button" onClick={() => setShowAddressForm(false)} style={{ flex:1, padding:'0.75rem', background:'#f1f5f9', color:'#333', borderRadius:'8px', fontWeight:600, border:'none', cursor:'pointer' }}>Cancel</button>
+                        </div>
                       </div>
-                      <button className="cart-remove-btn" onClick={() => removeItem(item.productId)}>Remove</button>
-                    </div>
-                    <div className="cart-item-price">₦{(effectivePrice * item.quantity).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-                  </div>
-                );
-              })}
+                    </form>
+                  )}
+                </>
+              )}
             </div>
-          </div>
 
-          {/* Summary */}
-          <div className="cart-summary" style={{ fontFamily: 'Inter,sans-serif' }}>
-            <h3>Order Summary</h3>
-            <div className="cart-summary-row"><span>Subtotal</span><span>₦{subtotal().toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
-            <div className="cart-summary-row"><span>Delivery Fee</span><span>₦{DELIVERY_FEE.toLocaleString()}</span></div>
-            <div className="cart-summary-row"><span>Platform Fee (2%)</span><span>₦{PLATFORM_FEE.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
-            <div className="cart-summary-row total"><span>Total</span><span>₦{total.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div>
+            {vendorGroups.map(([vendorId, { vendorName, items: vendorItems }]) => {
+              const vendorTotal = calculateSubtotal(vendorItems);
+              const vendorGrandTotal = vendorTotal + DELIVERY_FEE + PLATFORM_FEE;
+              
+              return (
+                <div key={vendorId} className="vendor-block">
+                  <div className="vendor-block-header">
+                    <img src="/logo.png" alt="Vendor" className="v-logo" style={{ objectFit:'contain' }} />
+                    <div className="v-header-info">
+                      <div className="v-name">{vendorName}</div>
+                      <div className="v-meta">
+                        {vendorItems.reduce((acc, i) => acc + i.quantity, 0)} Item{vendorItems.length>1?'s':''} 
+                        <span className="v-meta-dot">•</span> 
+                        ₦{(vendorTotal).toLocaleString()}
+                      </div>
+                    </div>
+                    <a href={`/store/${vendorId}`} className="v-view-btn">View Selection <span>⌄</span></a>
+                  </div>
 
-            {orderError && (
-              <p style={{ color: '#ef4444', fontSize: '0.82rem', marginTop: '0.75rem', textAlign: 'center' }}>
-                {orderError}
-              </p>
-            )}
+                  <div className="vendor-items">
+                    {vendorItems.map(item => (
+                      <div key={item.productId} className="v-item">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="v-item-img" />
+                        ) : (
+                          <div className="v-item-img" style={{ display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem' }}>🛒</div>
+                        )}
+                        <div className="v-item-details">
+                          <div className="v-item-name">{item.name}</div>
+                          <div className="v-item-price">₦{(item.price * (1 - item.discount / 100)).toLocaleString()}</div>
+                        </div>
+                        <div className="v-qty-wrap">
+                          <button className="v-qty-btn" onClick={() => updateQty(item.productId, item.quantity - 1)}>-</button>
+                          <span style={{ fontSize:'0.85rem', fontWeight:800 }}>{item.quantity}</span>
+                          <button className="v-qty-btn" onClick={() => updateQty(item.productId, item.quantity + 1)}>+</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-            <button
-              className="cart-checkout-btn"
-              onClick={handleProceedToCheckout}
-              disabled={placingOrder}
-            >
-              {placingOrder ? 'Processing Order...' : 'Pay with Paystack'}
-            </button>
-            
-            {!token && (
-               <p style={{ fontSize: '0.78rem', color: '#6b7280', marginTop: '1rem', textAlign: 'center' }}>
-                 Or <a href="/login" style={{ color: '#005b9f' }}>Sign in</a> to save your address.
-               </p>
-            )}
+                  <div className="v-deliver-wrap">
+                    <span className="v-del-icon">🛵</span>
+                    <div className="v-del-text">
+                      Delivering to <strong>{token ? (addresses.find(a => a.id === selectedAddressId)?.line1 || 'Saved Address') : (newAddress.line1 || 'Entered Address, City')}</strong><br/>
+                      Total w/fees: ₦{vendorGrandTotal.toLocaleString()}
+                    </div>
+                  </div>
 
-            <button
-              onClick={clearCart}
-              style={{ width: '100%', background: 'none', border: 'none', color: '#ef4444', fontSize: '0.82rem', marginTop: '0.75rem', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}
-            >
-              Clear Cart
-            </button>
-          </div>
+                  <button 
+                    className="v-checkout-btn" 
+                    onClick={() => handleCheckoutByVendor(vendorId, vendorItems)}
+                    disabled={loadingVendorId === vendorId}
+                  >
+                    {loadingVendorId === vendorId ? 'Processing...' : 'Checkout'}
+                  </button>
+                  <button className="v-clear-btn" onClick={() => handleClearVendor(vendorItems)}>
+                    Clear Selection
+                  </button>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </main>
+
+      {/* App Dock */}
+      <div className="dock-bar">
+        <div className="dock-inner">
+          <a href="/" className={`dock-btn ${activeTab === 'Home' ? 'active' : ''}`} onClick={(e) => {e.preventDefault(); router.push('/');}}>
+            <span className="dock-icon">🛋️</span>
+            <span className="dock-label">Home</span>
+          </a>
+          <button className={`dock-btn ${activeTab === 'Search' ? 'active' : ''}`} onClick={() => router.push('/')}>
+            <span className="dock-icon">🔭</span>
+            <span className="dock-label">Search</span>
+          </button>
+          <a href="/cart" className={`dock-btn ${activeTab === 'Orders' ? 'active' : ''}`}>
+            <span className="dock-icon">📦</span>
+            {totalCartCount > 0 && <div className="dock-badge">{totalCartCount}</div>}
+            <span className="dock-label">Orders</span>
+          </a>
+          <button className={`dock-btn ${activeTab === 'Support' ? 'active' : ''}`}>
+            <span className="dock-icon">🎧</span>
+            <span className="dock-label">Support</span>
+          </button>
+          <a href="/dashboard" className={`dock-btn ${activeTab === 'Profile' ? 'active' : ''}`}>
+            <span className="dock-icon">🤡</span>
+            <span className="dock-label">Profile</span>
+          </a>
         </div>
-      )}
+      </div>
     </>
   );
 }
