@@ -97,6 +97,7 @@ model Subcategory {
   
   name        String
   slug        String   @unique
+  image       String?
   
   vendors     VendorProfile[]
   products    Product[]

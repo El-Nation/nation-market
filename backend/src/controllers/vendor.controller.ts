@@ -289,7 +289,7 @@ export const updateOrderStatus = async (req: any, res: any) => {
     const profileId = req.user.vendorProfile.id;
     const { id } = req.params;
     const { status } = req.body;
-    const validStatuses = ['ACCEPTED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
+    const validStatuses = ['ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
     if (!validStatuses.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status' });
     const existing = await prisma.order.findFirst({ where: { id, vendorId: profileId } });
     if (!existing) return res.status(404).json({ success: false, message: 'Order not found' });

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
+import { useLocationStore } from '../store/locationStore';
 import { useRouter } from 'next/navigation';
 
 const API = 'http://localhost:5000/api/storefront';
@@ -33,6 +34,7 @@ function optimizeImg(url: string, w = 400) {
 export default function MarketplacePage() {
   const { user, token, logout, initAuth } = useAuthStore();
   const { addItem, totalItems, initCart } = useCartStore();
+  const { location, setLocation, initLocation, detectLocation, isDetecting } = useLocationStore();
   const router = useRouter();
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -41,13 +43,13 @@ export default function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ products: Product[]; vendors: Vendor[]; categories: Category[] } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [location, setLocation] = useState('29 Imatitikua, Uselu, Benin City');
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [selectedCat, setSelectedCat] = useState<Category | null>(null);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [addedId, setAddedId] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,10 +57,9 @@ export default function MarketplacePage() {
     setIsMounted(true);
     initAuth();
     initCart();
+    initLocation();
     fetchAll();
-    const saved = localStorage.getItem('nm_location');
-    if (saved) setLocation(saved);
-  }, [initAuth, initCart]);
+  }, [initAuth, initCart, initLocation]);
 
   async function fetchAll() {
     try {
@@ -71,8 +72,9 @@ export default function MarketplacePage() {
       if (catData?.success) setCategories(catData.data);
       if (vendorData?.success) setVendors(vendorData.data);
       if (prodData?.success) setFeaturedProducts(prodData.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching marketplace data:', err);
+      setFetchError(err.message || 'Failed to fetch');
     }
   }
 
@@ -99,15 +101,7 @@ export default function MarketplacePage() {
     setTimeout(() => setAddedId(null), 1500);
   }
 
-  function detectLocation() {
-    if (!navigator.geolocation) return alert('Geolocation not supported');
-    navigator.geolocation.getCurrentPosition(pos => {
-      const loc = `${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)} (Detected)`;
-      setLocation(loc);
-      localStorage.setItem('nm_location', loc);
-      setLocationModalOpen(false);
-    });
-  }
+
 
   const focusSearch = () => {
     if (searchInputRef.current) {
@@ -431,6 +425,13 @@ export default function MarketplacePage() {
               onChange={e => { handleSearch(e.target.value); setSearchOpen(true); }}
               onFocus={() => setSearchOpen(true)}
               onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchResults) {
+                  if (searchResults.products.length > 0) router.push(`/product/${searchResults.products[0].id}`);
+                  else if (searchResults.vendors.length > 0) router.push(`/store/${searchResults.vendors[0].id}`);
+                  else if (searchResults.categories.length > 0) router.push(`/category/${searchResults.categories[0].slug}`);
+                }
+              }}
             />
             {searchOpen && searchResults && (
               <div className="cd-search-dropdown">
@@ -438,7 +439,7 @@ export default function MarketplacePage() {
                   <>
                     <div className="cd-search-section">Categories</div>
                     {searchResults.categories.map(c => (
-                      <div key={c.id} className="cd-search-item" onClick={() => router.push(`/category/${c.slug}`)}>
+                      <div key={c.id} className="cd-search-item" onMouseDown={(e) => { e.preventDefault(); router.push(`/category/${c.slug}`); }}>
                         <span>🏪</span> {c.name}
                       </div>
                     ))}
@@ -448,7 +449,7 @@ export default function MarketplacePage() {
                   <>
                     <div className="cd-search-section">Stores</div>
                     {searchResults.vendors.map(v => (
-                      <div key={v.id} className="cd-search-item" onClick={() => router.push(`/store/${v.id}`)}>
+                      <div key={v.id} className="cd-search-item" onMouseDown={(e) => { e.preventDefault(); router.push(`/store/${v.id}`); }}>
                         {v.logoUrl ? <img src={optimizeImg(v.logoUrl, 40)} className="cd-search-thumb" alt="" /> : <span>🏪</span>}
                         <span>{v.storeName}</span>
                       </div>
@@ -459,7 +460,7 @@ export default function MarketplacePage() {
                   <>
                     <div className="cd-search-section">Products</div>
                     {searchResults.products.map(p => (
-                      <div key={p.id} className="cd-search-item" onClick={() => router.push(`/product/${p.id}`)}>
+                      <div key={p.id} className="cd-search-item" onMouseDown={(e) => { e.preventDefault(); router.push(`/product/${p.id}`); }}>
                         {p.images ? <img src={optimizeImg(p.images, 40)} className="cd-search-thumb" alt="" /> : <span>📦</span>}
                         <div>
                           <div style={{ fontWeight: 700 }}>{p.name}</div>
@@ -512,8 +513,13 @@ export default function MarketplacePage() {
             <button className="cd-dock-item" onClick={focusSearch}>
               🔍 <span>Search</span>
             </button>
-            <button className="cd-dock-item" onClick={() => router.push(token ? '/dashboard' : '/login')}>
-              📦 <span>Orders</span>
+            <button className="cd-dock-item" onClick={() => router.push('/cart')} style={{ position: 'relative' }}>
+              🛒 <span>Cart</span>
+              {totalItems() > 0 && (
+                <div style={{ position: 'absolute', top: '2px', right: '15px', background: '#fbbf24', color: '#111', fontSize: '0.65rem', fontWeight: 800, height: '18px', minWidth: '18px', padding: '0 4px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {totalItems()}
+                </div>
+              )}
             </button>
             <button className="cd-dock-item" onClick={() => setSupportModalOpen(true)}>
               🎧 <span>Support</span>
@@ -603,11 +609,11 @@ export default function MarketplacePage() {
               <a key={v.id} href={`/store/${v.id}`} className="cd-store-card">
                 <div className="cd-store-cover-wrap">
                   {v.coverUrl
-                    ? <img src={optimizeImg(v.coverUrl, 500)} alt={v.storeName} className="cd-store-cover" loading="lazy" />
+                    ? <img src={optimizeImg(v.coverUrl, 500)} alt={v.storeName} className="cd-store-cover" loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(v.storeName)}&background=f8fafc&color=94a3b8&size=500`; }} />
                     : <div className="cd-store-cover-ph">🏪</div>
                   }
                   <div className="cd-store-logo-overlay">
-                    {v.logoUrl ? <img src={optimizeImg(v.logoUrl, 80)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : v.storeName.charAt(0).toUpperCase()}
+                    {v.logoUrl ? <img src={optimizeImg(v.logoUrl, 80)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(v.storeName)}&background=0f172a&color=fff&size=80`; }} /> : v.storeName.charAt(0).toUpperCase()}
                   </div>
                 </div>
                 <div className="cd-store-body">
@@ -636,7 +642,12 @@ export default function MarketplacePage() {
           <a href="/products" className="cd-view-all">View all →</a>
         </div>
 
-        {featuredProducts.length === 0 ? (
+        {fetchError ? (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#ef4444' }}>
+            <div style={{ fontSize: '2.5rem' }}>❌</div>
+            <p style={{ marginTop: '0.5rem' }}>Failed to load featured products: {fetchError}</p>
+          </div>
+        ) : featuredProducts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
             <div style={{ fontSize: '2.5rem' }}>📦</div>
             <p style={{ marginTop: '0.5rem' }}>Loading featured products...</p>
@@ -647,7 +658,7 @@ export default function MarketplacePage() {
               <div key={p.id} className="cd-prod-card">
                 <div className="cd-prod-img-wrap" onClick={() => router.push(`/product/${p.id}`)}>
                   {p.images
-                    ? <img src={optimizeImg(p.images, 400)} alt={p.name} className="cd-prod-img" loading="lazy" />
+                    ? <img src={optimizeImg(p.images, 400)} alt={p.name} className="cd-prod-img" loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=f8fafc&color=94a3b8&size=400`; }} />
                     : <div className="cd-prod-img-ph">🛍️</div>
                   }
                   {p.discount > 0 && <span className="cd-discount-tag">-{p.discount}%</span>}
@@ -681,17 +692,18 @@ export default function MarketplacePage() {
             <p style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '1.25rem' }}>Select your current delivery address in Nigeria to view nearby vendor stores and delivery estimates.</p>
             
             <button
-              onClick={detectLocation}
-              style={{ width: '100%', background: '#059669', color: '#fff', border: 'none', borderRadius: '12px', padding: '0.85rem', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem' }}
+              onClick={async () => { await detectLocation(); setLocationModalOpen(false); }}
+              disabled={isDetecting}
+              style={{ width: '100%', background: '#059669', color: '#fff', border: 'none', borderRadius: '12px', padding: '0.85rem', fontWeight: 700, cursor: 'pointer', marginBottom: '1rem', opacity: isDetecting ? 0.7 : 1 }}
             >
-              📍 Detect Current GPS Location
+              {isDetecting ? '📍 Detecting GPS...' : '📍 Detect Current GPS Location'}
             </button>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {['29 Imatitikua, Uselu, Benin City', 'Lekki Phase 1, Lagos', 'Ikeja City Mall, Lagos', 'Wuse 2, Abuja'].map(loc => (
                 <button
                   key={loc}
-                  onClick={() => { setLocation(loc); localStorage.setItem('nm_location', loc); setLocationModalOpen(false); }}
+                  onClick={() => { setLocation(loc); setLocationModalOpen(false); }}
                   style={{ textAlign: 'left', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.75rem 1rem', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer' }}
                 >
                   {loc}

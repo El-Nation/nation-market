@@ -10,8 +10,18 @@ interface Vendor { id: string; storeName: string; logoUrl?: string; coverUrl?: s
 interface StoreData { vendor: Vendor; products: Product[]; total: number; pages: number; }
 
 function optimizeImg(url: string, w = 400) {
-  if (!url || !url.includes('cloudinary.com')) return url;
-  return url.replace('/upload/', `/upload/w_${w},c_limit,f_auto,q_auto/`);
+  if (!url) return url;
+  if (url.includes('cloudinary.com')) {
+    return url.replace('/upload/', `/upload/w_${w},c_limit,f_auto,q_auto/`);
+  }
+  if (url.includes('loremflickr.com')) {
+    // Preserve 1.5 ratio -> 1200/800 prevents Flickr from aggressive panorama cropping that causes pixelated zooms
+    return url.replace(/\/\d+\/\d+\//, `/${w}/${Math.floor(w * 0.66)}/`);
+  }
+  if (url.includes('unsplash.com')) {
+    return url.replace(/w=\d+/, `w=${w}`);
+  }
+  return url;
 }
 
 function parseHours(raw?: string) {

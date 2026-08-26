@@ -1,0 +1,19 @@
+[
+  "id",
+  "vendorId",
+  "categoryId",
+  "subcategoryId",
+  "name",
+  "description",
+  "price",
+  "discount",
+  "inventory",
+  "isAvailable",
+  "unit",
+  "images",
+  "sku",
+  "variations",
+  "createdAt",
+  "updatedAt",
+  "imagePublicId"
+]

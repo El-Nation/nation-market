@@ -763,10 +763,10 @@ export default function Home() {
 
             {/* Filter Tabs */}
             <div style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 1rem', flexWrap: 'wrap' }}>
-              {['All Orders', 'PENDING', 'PAID', 'ACCEPTED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].map(f => (
+              {['All Orders', 'PENDING', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].map(f => (
                 <button key={f} onClick={() => setActiveOrderFilter(f)}
                   style={{ padding: '0.4rem 1rem', borderRadius: '20px', border: '1px solid #e5e7eb', background: activeOrderFilter === f ? '#1d4ed8' : '#fff', color: activeOrderFilter === f ? '#fff' : '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem' }}>
-                  {f === 'IN_TRANSIT' ? 'In Transit' : f.charAt(0) + f.slice(1).toLowerCase()}
+                  {f === 'IN_TRANSIT' ? 'In Transit' : f === 'READY_FOR_PICKUP' ? 'Ready for Pickup' : f.charAt(0) + f.slice(1).toLowerCase()}
                 </button>
               ))}
             </div>
@@ -784,21 +784,23 @@ export default function Home() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {filtered.map((order: any) => {
                     const statusColors: Record<string, { bg: string; color: string }> = {
-                      PENDING:    { bg: '#fef3c7', color: '#92400e' },
-                      PAID:       { bg: '#dbeafe', color: '#1d4ed8' },
-                      ACCEPTED:   { bg: '#e0e7ff', color: '#4338ca' },
-                      IN_TRANSIT: { bg: '#ede9fe', color: '#5b21b6' },
-                      DELIVERED:  { bg: '#dcfce7', color: '#15803d' },
-                      CANCELLED:  { bg: '#fee2e2', color: '#991b1b' },
+                      PENDING:          { bg: '#fef3c7', color: '#92400e' },
+                      ACCEPTED:         { bg: '#dbeafe', color: '#1d4ed8' },
+                      PREPARING:        { bg: '#ffedd5', color: '#c2410c' },
+                      READY_FOR_PICKUP: { bg: '#e0e7ff', color: '#4338ca' },
+                      IN_TRANSIT:       { bg: '#ede9fe', color: '#5b21b6' },
+                      DELIVERED:        { bg: '#dcfce7', color: '#15803d' },
+                      CANCELLED:        { bg: '#fee2e2', color: '#991b1b' },
                     };
                     const sc = statusColors[order.status] || { bg: '#f3f4f6', color: '#374151' };
                     const nextActions: Record<string, { label: string; status: string; color: string }[]> = {
-                      PENDING:    [{ label: 'Accept Order', status: 'ACCEPTED', color: '#1d4ed8' }, { label: 'Cancel', status: 'CANCELLED', color: '#dc2626' }],
-                      PAID:       [{ label: 'Accept Order', status: 'ACCEPTED', color: '#1d4ed8' }, { label: 'Cancel', status: 'CANCELLED', color: '#dc2626' }],
-                      ACCEPTED:   [{ label: 'Mark In Transit', status: 'IN_TRANSIT', color: '#7c3aed' }, { label: 'Cancel', status: 'CANCELLED', color: '#dc2626' }],
-                      IN_TRANSIT: [{ label: 'Mark Delivered', status: 'DELIVERED', color: '#16a34a' }],
-                      DELIVERED:  [],
-                      CANCELLED:  [],
+                      PENDING:          [{ label: 'Accept Order', status: 'ACCEPTED', color: '#1d4ed8' }, { label: 'Cancel', status: 'CANCELLED', color: '#dc2626' }],
+                      ACCEPTED:         [{ label: 'Start Preparing', status: 'PREPARING', color: '#c2410c' }],
+                      PREPARING:        [{ label: 'Ready for Pickup / Delivery', status: 'READY_FOR_PICKUP', color: '#4338ca' }],
+                      READY_FOR_PICKUP: [{ label: 'Hand off to Rider', status: 'IN_TRANSIT', color: '#7c3aed' }],
+                      IN_TRANSIT:       [{ label: 'Mark Delivered', status: 'DELIVERED', color: '#16a34a' }],
+                      DELIVERED:        [],
+                      CANCELLED:        [],
                     };
                     const actions = nextActions[order.status] || [];
 
@@ -895,16 +897,85 @@ export default function Home() {
             })()}
           </div>
         )}
-        
         {activeTab === 'Payments' && (
           <div className="tab-pane fade-in">
             <h2>Earnings & Payouts</h2>
-            <p className="text-sm">Store Revenue Ledgers & Gateway reconciliations.</p>
-            <div className="empty-state" style={{ textAlign: 'center', padding: '4rem 1rem', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', marginTop: '2rem' }}>
-              <DollarSign size={48} color="#9ca3af" style={{ margin: '0 auto 1rem' }} />
-              <h3 style={{ color: '#111827', margin: '0 0 0.5rem' }}>No Payment Records</h3>
-              <p style={{ color: '#6b7280', margin: 0 }}>Revenue ledgers will structurally populate when transactions scale.</p>
-            </div>
+            <p className="text-sm">Store Revenue Ledgers & Gateway reconciliations based on grouped checkouts.</p>
+
+            {(() => {
+              const deliveredOrders = vendorOrders.filter(o => o.status === 'DELIVERED' || o.payment?.status === 'SUCCESS');
+              const grossRevenue = deliveredOrders.reduce((sum, o) => {
+                 return sum + o.items.reduce((s: number, items: any) => s + (items.price * items.quantity), 0);
+              }, 0);
+              const platformFees = deliveredOrders.length * 500; // Flat ₦500 checkout fee from platform stage 8 cart calculation
+              const netPayout = grossRevenue - platformFees;
+
+              return (
+                <>
+                  <div className="metrics-grid mt-4 mb-2">
+                    <div className="metric-card" style={{ flex: 1, minWidth: '220px' }}>
+                      <div className="metric-icon bg-green-100 text-green-600"><DollarSign size={24} /></div>
+                      <div>
+                        <h4>Gross Product Revenue</h4>
+                        <div className="metric-val">₦{grossRevenue.toLocaleString()}</div>
+                      </div>
+                    </div>
+                    <div className="metric-card" style={{ flex: 1, minWidth: '220px' }}>
+                      <div className="metric-icon bg-yellow-100 text-yellow-600"><TrendingUp size={24} /></div>
+                      <div>
+                        <h4>Platform Deductions</h4>
+                        <div className="metric-val">₦{platformFees.toLocaleString()}</div>
+                      </div>
+                    </div>
+                    <div className="metric-card" style={{ flex: 1, minWidth: '220px' }}>
+                      <div className="metric-icon bg-blue-100 text-blue-600"><Layers size={24} /></div>
+                      <div>
+                        <h4>Net Payout</h4>
+                        <div className="metric-val">₦{Math.max(0, netPayout).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <h3 style={{ marginTop: '2.5rem', marginBottom: '1rem', color: '#111827', fontSize: '1.2rem' }}>Settled Checkouts</h3>
+                  
+                  {deliveredOrders.length === 0 ? (
+                    <div className="empty-state" style={{ textAlign: 'center', padding: '4rem 1rem', background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                      <DollarSign size={48} color="#9ca3af" style={{ margin: '0 auto 1rem' }} />
+                      <h3 style={{ color: '#111827', margin: '0 0 0.5rem' }}>No Payment Records</h3>
+                      <p style={{ color: '#6b7280', margin: 0 }}>Revenue ledgers will structurally populate when users check out your goods.</p>
+                    </div>
+                  ) : (
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Order ID</th>
+                          <th>Purchaser</th>
+                          <th>Items Gross</th>
+                          <th>Commission</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {deliveredOrders.map(o => {
+                          const gross = o.items.reduce((s: number, items: any) => s + (items.price * items.quantity), 0);
+                          return (
+                            <tr key={o.id}>
+                              <td>{new Date(o.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short' })}</td>
+                              <td style={{ fontFamily: 'monospace' }}>#{o.id.slice(0, 8).toUpperCase()}</td>
+                              <td>{!o.customer ? 'Guest' : `${o.customer.firstName} ${o.customer.lastName}`}</td>
+                              <td style={{ fontWeight: 700 }}>₦{gross.toLocaleString()}</td>
+                              <td style={{ color: '#b91c1c' }}>-₦500</td>
+                              <td><span className="status-badge online" style={{ background: '#dcfce7', color: '#166534' }}>SETTLED</span></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 

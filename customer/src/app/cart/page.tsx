@@ -12,7 +12,7 @@ export default function MobileGroupedCartPage() {
   const router = useRouter();
 
   // Active Bottom Nav Tab for layout parity
-  const [activeTab, setActiveTab] = useState('Orders');
+  const [activeTab, setActiveTab] = useState('Cart');
 
   // Address State
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -26,6 +26,7 @@ export default function MobileGroupedCartPage() {
   const [guestPhone, setGuestPhone] = useState('');
   const [geoStatus, setGeoStatus] = useState('');
 
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [loadingVendorId, setLoadingVendorId] = useState<string | null>(null);
   const [orderError, setOrderError] = useState('');
   
@@ -99,6 +100,57 @@ export default function MobileGroupedCartPage() {
     return vendorItems.reduce((acc, i) => acc + (i.price * (1 - i.discount/100)) * i.quantity, 0);
   };
 
+  const handleCheckoutAll = async () => {
+    if (!token && (!guestEmail || !guestName || !newAddress.line1)) {
+      setOrderError('Please provide all guest details and delivery address at the top of the page.');
+      window.scrollTo(0,0);
+      return;
+    }
+    if (token && addresses.length === 0 && !showAddressForm && !newAddress.line1) {
+      setShowAddressForm(true);
+      setOrderError('Please add a delivery address before checkout.');
+      window.scrollTo(0,0);
+      return;
+    }
+
+    setOrderError('');
+    setLoadingCheckout(true);
+
+    try {
+      const payload = {
+        items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+        deliveryAddressId: selectedAddressId || undefined,
+        deliveryAddress: (!selectedAddressId || !token) ? newAddress : undefined,
+        guestEmail: !token ? guestEmail : undefined,
+        guestName: !token ? guestName : undefined,
+        guestPhone: !token ? guestPhone : undefined,
+        type: 'DELIVERY'
+      };
+
+      const res = await fetch(`${API_URL}/customer/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (data.success && data.data) {
+        clearCart();
+        if (data.data.paystackUrl) {
+          window.location.href = data.data.paystackUrl;
+        } else {
+          router.push(`/checkout/success?reference=${data.data.reference}`);
+        }
+      } else {
+        setOrderError(data.message || 'Failed to checkout your cart.');
+      }
+    } catch (err: any) {
+      setOrderError(err.message || 'Network error.');
+    } finally {
+      setLoadingCheckout(false);
+    }
+  };
+  
   const handleCheckoutByVendor = async (vendorId: string, vendorItems: any[]) => {
     if (!token && (!guestEmail || !guestName || !newAddress.line1)) {
       setOrderError('Please provide all guest details and delivery address at the top of the page.');
@@ -149,7 +201,7 @@ export default function MobileGroupedCartPage() {
       setLoadingVendorId(null);
     }
   };
-  
+
   const handleClearVendor = (vendorItems: any[]) => {
     vendorItems.forEach(i => removeItem(i.productId));
   };
@@ -357,9 +409,9 @@ export default function MobileGroupedCartPage() {
                   <button 
                     className="v-checkout-btn" 
                     onClick={() => handleCheckoutByVendor(vendorId, vendorItems)}
-                    disabled={loadingVendorId === vendorId}
+                    disabled={loadingVendorId === vendorId || loadingCheckout}
                   >
-                    {loadingVendorId === vendorId ? 'Processing...' : 'Checkout'}
+                    {loadingVendorId === vendorId ? 'Processing...' : 'Checkout just this store'}
                   </button>
                   <button className="v-clear-btn" onClick={() => handleClearVendor(vendorItems)}>
                     Clear Selection
@@ -367,6 +419,30 @@ export default function MobileGroupedCartPage() {
                 </div>
               );
             })}
+
+            {(() => {
+              let grandTotal = 0;
+              vendorGroups.forEach(([vId, vObj]) => {
+                const vTotal = calculateSubtotal(vObj.items);
+                grandTotal += vTotal + DELIVERY_FEE + PLATFORM_FEE;
+              });
+              return (
+                 <div className="global-checkout-pane" style={{ background: '#fff', padding: '1.25rem', borderRadius: '16px', border: '1px solid #f1f5f9', marginTop: '1.5rem', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', fontWeight: 800, fontSize: '1.25rem' }}>
+                      <span>Multi-Store Grand Total:</span>
+                      <span>₦{grandTotal.toLocaleString()}</span>
+                    </div>
+                    <button 
+                      className="v-checkout-btn" 
+                      onClick={handleCheckoutAll}
+                      disabled={loadingCheckout}
+                      style={{ background: '#059669', fontSize: '1.05rem', padding: '1.25rem' }}
+                    >
+                      {loadingCheckout ? 'Processing Multiple Orders...' : `Checkout Entire Cart (₦${grandTotal.toLocaleString()})`}
+                    </button>
+                 </div>
+              );
+            })()}
           </>
         )}
       </main>
@@ -378,14 +454,14 @@ export default function MobileGroupedCartPage() {
             <span className="dock-icon">🛋️</span>
             <span className="dock-label">Home</span>
           </a>
-          <button className={`dock-btn ${activeTab === 'Search' ? 'active' : ''}`} onClick={() => router.push('/')}>
+          <button className={`dock-btn ${activeTab === 'Search' ? 'active' : ''}`} onClick={() => router.push('/?search=focus')}>
             <span className="dock-icon">🔭</span>
             <span className="dock-label">Search</span>
           </button>
-          <a href="/cart" className={`dock-btn ${activeTab === 'Orders' ? 'active' : ''}`}>
-            <span className="dock-icon">📦</span>
+          <a href="/cart" className={`dock-btn ${activeTab === 'Cart' ? 'active' : ''}`}>
+            <span className="dock-icon">🛒</span>
             {totalCartCount > 0 && <div className="dock-badge">{totalCartCount}</div>}
-            <span className="dock-label">Orders</span>
+            <span className="dock-label">Cart</span>
           </a>
           <button className={`dock-btn ${activeTab === 'Support' ? 'active' : ''}`}>
             <span className="dock-icon">🎧</span>
