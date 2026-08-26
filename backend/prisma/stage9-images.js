@@ -4,10 +4,12 @@ const path = require('path');
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
 cloudinary.config({
-  cloud_name: 'dgibtepjn',
-  api_key: '523449358252537',
-  api_secret: '-fz89r5gQQaSwnWQoLMkV4_NGAU'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 const adapter = new PrismaBetterSqlite3({ url: `file:${path.join(__dirname, '..', 'dev.db')}` });
