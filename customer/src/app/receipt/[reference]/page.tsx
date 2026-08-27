@@ -20,7 +20,7 @@ export default function DigitalReceiptPage() {
       }
       try {
         const API_URL = process.env.NEXT_PUBLIC_API_URL;
-        const res = await fetch(`${API_URL}/api/payment/verify/${reference}`);
+        const res = await fetch(`${API_URL}/api/payments/verify/${reference}`);
         const json = await res.json();
         
         if (json.success && json.data?.parentOrder) {

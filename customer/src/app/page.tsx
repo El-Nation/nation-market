@@ -6,8 +6,6 @@ import { useCartStore } from '../store/cartStore';
 import { useLocationStore } from '../store/locationStore';
 import { useRouter } from 'next/navigation';
 
-const API = (process.env.NEXT_PUBLIC_API_URL || '') + '/api/storefront';
-
 interface Subcategory { id: string; name: string; slug: string; }
 interface Category { id: string; name: string; slug: string; subcategories: Subcategory[]; }
 interface Vendor { id: string; storeName: string; logoUrl?: string; coverUrl?: string; businessType: string; address?: string; openingHours?: string; rating?: number; deliveryTime?: string; }
@@ -52,6 +50,8 @@ export default function MarketplacePage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const API = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '') + '/api/storefront';
 
   useEffect(() => {
     setIsMounted(true);
