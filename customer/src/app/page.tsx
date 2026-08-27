@@ -495,7 +495,7 @@ export default function MarketplacePage() {
             ) : (
               <button
                 className="cd-signup-btn"
-                onClick={() => router.push('/login')}
+                onClick={() => window.location.href = '/login'}
                 title="Sign up or log in"
               >
                 ✨ <span>Sign Up</span>
@@ -779,13 +779,13 @@ export default function MarketplacePage() {
                 <p style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '1.25rem' }}>Sign in to manage your orders, saved addresses, and active carts.</p>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button
-                    onClick={() => { router.push('/login'); setProfileModalOpen(false); }}
+                    onClick={() => { window.location.href = '/login'; }}
                     style={{ flex: 1, background: '#059669', color: '#fff', border: 'none', borderRadius: '12px', padding: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
                   >
                     Sign In
                   </button>
                   <button
-                    onClick={() => { router.push('/register'); setProfileModalOpen(false); }}
+                    onClick={() => { window.location.href = '/register'; }}
                     style={{ flex: 1, background: '#f1f5f9', color: '#0f172a', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
                   >
                     Register
