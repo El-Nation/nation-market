@@ -1,11 +1,19 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '../store/authStore';
 import { Store, Package, ListOrdered, DollarSign, Settings, LogOut, TrendingUp, Star, Box, Search, Plus, X, Layers } from 'lucide-react';
 import { optimizeCloudinaryUrl } from '../utils/cloudinary';
 
 export default function Home() {
+  return (
+    <Suspense fallback={<div className="loader" style={{ padding: '2rem', textAlign: 'center' }}>Loading vendor portal...</div>}>
+      <VendorDashboardContent />
+    </Suspense>
+  );
+}
+
+function VendorDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, token, login, logout } = useAuthStore();

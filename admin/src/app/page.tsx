@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '../store/authStore';
 import {
@@ -9,6 +9,14 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboard() {
+  return (
+    <Suspense fallback={<div className="loader" style={{ padding: '2rem', textAlign: 'center' }}>Loading secure admin session...</div>}>
+      <AdminDashboardContent />
+    </Suspense>
+  );
+}
+
+function AdminDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, token, login, logout } = useAuthStore();
