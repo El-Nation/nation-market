@@ -37,7 +37,7 @@ export const handlePaystackWebhook = async (req: Request, res: Response) => {
 
 export const verifyPayment = async (req: Request, res: Response) => {
   try {
-    const { reference } = req.params;
+    const reference = req.params.reference as string;
 
     let payment = await prisma.payment.findUnique({
       where: { reference },
@@ -73,8 +73,8 @@ export const verifyPayment = async (req: Request, res: Response) => {
       success: true,
       data: {
         paymentStatus: payment?.status,
-        orderId: payment?.parentOrder?.id || payment?.orderId, // Fallback for old orders
-        parentOrder: payment?.parentOrder
+        orderId: (payment as any)?.parentOrder?.id || payment?.orderId, // Fallback for old orders
+        parentOrder: (payment as any)?.parentOrder
       }
     });
 
@@ -127,7 +127,7 @@ async function processSuccessfulPayment(reference: string) {
       const parentOrder = (updatedPayment as any).parentOrder;
       const userEmail = parentOrder?.guestEmail || parentOrder?.customer?.email;
       if (userEmail) {
-        const frontendUrl = process.env.FRONTEND_CUSTOMER_URL || 'http://localhost:3001';
+        const frontendUrl = process.env.FRONTEND_CUSTOMER_URL || process.env.FRONTEND_VENDOR_URL as string;
         
         const vendorBlocksHtml = parentOrder?.orders.map((vendorOrder: any) => {
           let itemsHtml = vendorOrder.items.map((item: any) => {

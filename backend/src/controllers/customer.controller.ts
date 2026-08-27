@@ -37,7 +37,7 @@ export const createAddress = async (req: Request, res: Response) => {
 export const updateAddress = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { label, line1, line2, city, state, country, isDefault } = req.body;
 
     // Ownership check
@@ -61,7 +61,7 @@ export const updateAddress = async (req: Request, res: Response) => {
 export const deleteAddress = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const existing = await prisma.customerAddress.findUnique({ where: { id } });
     if (!existing || existing.userId !== userId) {

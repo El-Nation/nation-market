@@ -19,7 +19,7 @@ export default function DigitalReceiptPage() {
         return;
       }
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const API_URL = process.env.NEXT_PUBLIC_API_URL;
         const res = await fetch(`${API_URL}/payments/verify/${reference}`);
         const json = await res.json();
         

@@ -31,7 +31,7 @@ export default function RiderRegistration() {
     setLoading(true);
     
     try {
-      const res = await fetch('http://localhost:5000/api/auth/rider/apply', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/rider/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -222,7 +222,7 @@ export default function RiderRegistration() {
           
           {step < 4 && <button className="btn-primary" onClick={nextStep}>Continue <ChevronRight size={18} /></button>}
           {step === 4 && <button className="btn-primary" onClick={handleSubmit} disabled={loading}>{loading ? 'Transmitting...' : 'Accept & Register'}</button>}
-          {step === 5 && <button className="btn-primary" onClick={() => window.location.href = 'http://localhost:3000/login'}>Enter Ecosystem</button>}
+          {step === 5 && <button className="btn-primary" onClick={() => window.location.href = (process.env.NEXT_PUBLIC_CUSTOMER_URL || '') + '/login'}>Enter Ecosystem</button>}
         </div>
 
       </div>

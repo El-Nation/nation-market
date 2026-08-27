@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '../../store/cartStore';
 
-const API = 'http://localhost:5000/api/storefront';
+const API = (process.env.NEXT_PUBLIC_API_URL || '') + '/api/storefront';
 
 interface Vendor {
   id: string;

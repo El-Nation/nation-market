@@ -73,7 +73,7 @@ export const getAvailableDeliveries = async (req: Request, res: Response) => {
 export const claimDelivery = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const { id } = req.params; // Order ID
+    const id = req.params.id as string; // Order ID
 
     const riderProfile = await getRiderProfileByUserId(userId);
     if (!riderProfile) {
@@ -158,7 +158,7 @@ export const getActiveDelivery = async (req: Request, res: Response) => {
 export const updateDeliveryStatus = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const { id } = req.params; // Order ID
+    const id = req.params.id as string; // Order ID
     const { status } = req.body; // IN_TRANSIT or DELIVERED
 
     const riderProfile = await getRiderProfileByUserId(userId);

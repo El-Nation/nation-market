@@ -32,7 +32,7 @@ export const useAuthStore = create<AuthState>((set) => {
       localStorage.removeItem('jwt_token');
       localStorage.removeItem('user_role');
       set({ user: null, token: null });
-      window.location.href = 'http://localhost:3000/login'; // Global portal
+      window.location.href = (process.env.NEXT_PUBLIC_CUSTOMER_URL || '') + '/login'; // Global portal
     },
   };
 });

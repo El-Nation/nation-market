@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useCartStore } from '../../../store/cartStore';
 
-const API = 'http://localhost:5000/api/storefront';
+const API = (process.env.NEXT_PUBLIC_API_URL || '') + '/api/storefront';
 
 interface Product { id: string; name: string; price: number; discount: number; images: string; unit?: string; isAvailable: boolean; subcategory?: { name: string; }; }
 interface Vendor { id: string; storeName: string; logoUrl?: string; coverUrl?: string; businessType: string; address?: string; openingHours?: string; description?: string; subcategories?: { name: string }[]; }

@@ -45,4 +45,5 @@ backend/raw_seed.js
 backend/test*.js
 backend/ping.js
 backend/fix.js
-
+ts_err.log
+frontend_ts.log

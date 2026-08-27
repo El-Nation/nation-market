@@ -55,7 +55,7 @@ export default function AdminDashboard() {
     
     // After URL params are cleared or if none exist, enforce protection
     if (!token || user?.role !== 'ADMIN') {
-      window.location.href = 'http://localhost:3000/login';
+      window.location.href = (process.env.NEXT_PUBLIC_CUSTOMER_URL || '') + '/login';
     } else {
       setAuthorized(true);
       // Only fetch once
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       
-      const meRes = await fetch('http://localhost:5000/api/auth/me', { headers });
+      const meRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/me', { headers });
       if (meRes.ok) {
         const data = await meRes.json();
         if (data.success) {
@@ -81,40 +81,40 @@ export default function AdminDashboard() {
         }
       }
 
-      const statsRes = await fetch('http://localhost:5000/api/admin/stats', { headers });
+      const statsRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/stats', { headers });
       if (statsRes.ok) {
         const data = await statsRes.json();
         setStats(data.data);
       }
 
-      const vendorsRes = await fetch('http://localhost:5000/api/admin/vendors', { headers });
+      const vendorsRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/vendors', { headers });
       if (vendorsRes.ok) {
         const data = await vendorsRes.json();
         setVendors(data.data);
       }
 
-      const customersRes = await fetch('http://localhost:5000/api/admin/customers', { headers });
+      const customersRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/customers', { headers });
       if (customersRes.ok) {
         const data = await customersRes.json();
         setCustomers(data.data);
       }
 
-      const ridersRes = await fetch('http://localhost:5000/api/admin/riders', { headers });
+      const ridersRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/riders', { headers });
       if (ridersRes.ok) {
         const data = await ridersRes.json();
         setRiders(data.data);
       }
       
-      const prodRes = await fetch('http://localhost:5000/api/admin/products', { headers });
+      const prodRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/products', { headers });
       if (prodRes.ok) setProducts((await prodRes.json()).data);
 
-      const catRes = await fetch('http://localhost:5000/api/admin/categories', { headers });
+      const catRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/categories', { headers });
       if (catRes.ok) setCategories((await catRes.json()).data);
 
-      const ordersRes = await fetch('http://localhost:5000/api/admin/orders', { headers });
+      const ordersRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/orders', { headers });
       if (ordersRes.ok) setAllOrders((await ordersRes.json()).data);
 
-      const payRes = await fetch('http://localhost:5000/api/admin/payments', { headers });
+      const payRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/admin/payments', { headers });
       if (payRes.ok) setAllPayments((await payRes.json()).data);
 
       setLoading(false);
@@ -149,10 +149,10 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     logout();
-    window.location.replace('http://localhost:3000/login');
+    window.location.replace((process.env.NEXT_PUBLIC_CUSTOMER_URL || '') + '/login');
   };
 
-  const API = 'http://localhost:5000';
+  const API = (process.env.NEXT_PUBLIC_API_URL || '');
 
   const handleUpdate = async (endpoint: string, payload: any, successMsg: string) => {
     try {

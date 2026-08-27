@@ -6,7 +6,7 @@ import { useCartStore } from '../store/cartStore';
 import { useLocationStore } from '../store/locationStore';
 import { useRouter } from 'next/navigation';
 
-const API = 'http://localhost:5000/api/storefront';
+const API = (process.env.NEXT_PUBLIC_API_URL || '') + '/api/storefront';
 
 interface Subcategory { id: string; name: string; slug: string; }
 interface Category { id: string; name: string; slug: string; subcategories: Subcategory[]; }
@@ -757,9 +757,9 @@ export default function MarketplacePage() {
                   <button
                     onClick={() => {
                       setProfileModalOpen(false);
-                      if (user.role === 'ADMIN') window.location.href = 'http://localhost:3002';
-                      else if (user.role === 'VENDOR') window.location.href = 'http://localhost:3001';
-                      else if (user.role === 'RIDER') window.location.href = 'http://localhost:3003';
+                      if (user.role === 'ADMIN') window.location.href = (process.env.NEXT_PUBLIC_ADMIN_URL || '');
+                      else if (user.role === 'VENDOR') window.location.href = (process.env.NEXT_PUBLIC_VENDOR_URL || '');
+                      else if (user.role === 'RIDER') window.location.href = (process.env.NEXT_PUBLIC_RIDER_URL || '');
                       else router.push('/dashboard');
                     }}
                     style={{ flex: 2, background: '#059669', color: '#fff', border: 'none', borderRadius: '12px', padding: '0.75rem', fontWeight: 700, cursor: 'pointer' }}

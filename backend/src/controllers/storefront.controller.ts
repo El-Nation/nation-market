@@ -51,7 +51,7 @@ export const getVendors = async (req: Request, res: Response) => {
 // ─── GET /api/storefront/vendors/:id ─────────────────────────────────────────
 export const getVendorStorefront = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { page = '1', limit = '24' } = req.query as Record<string, string>;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -141,7 +141,7 @@ export const getProducts = async (req: Request, res: Response) => {
 // ─── GET /api/storefront/products/:id ────────────────────────────────────────
 export const getProductById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const product = await prisma.product.findUnique({
       where: { id },
       select: {

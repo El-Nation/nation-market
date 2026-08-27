@@ -208,7 +208,7 @@ export const updateProduct = async (req: Request, res: Response) => {
   try {
     const profileId    = (req as any).user.vendorProfile.id;
     const businessType = (req as any).user.vendorProfile.businessType;
-    const { id }       = req.params;
+    const id = req.params.id as string;
 
     const existing = await prisma.product.findFirst({ where: { id, vendorId: profileId } });
     if (!existing) return res.status(404).json({ success: false, message: 'Product not found or unauthorized.' });
@@ -250,7 +250,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 export const deleteProduct = async (req: Request, res: Response) => {
   try {
     const profileId = (req as any).user.vendorProfile.id;
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const existing = await prisma.product.findFirst({ where: { id, vendorId: profileId } });
     if (!existing) return res.status(404).json({ success: false, message: 'Product not found or unauthorized.' });
@@ -287,7 +287,7 @@ export const getVendorOrders = async (req: any, res: any) => {
 export const updateOrderStatus = async (req: any, res: any) => {
   try {
     const profileId = req.user.vendorProfile.id;
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { status } = req.body;
     const validStatuses = ['ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
     if (!validStatuses.includes(status)) return res.status(400).json({ success: false, message: 'Invalid status' });

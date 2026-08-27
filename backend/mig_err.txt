@@ -1,0 +1,33 @@
+,,C:\Users\USER\projects\nation-market\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:390
+        throw new PrismaClientInitializationError(
+              ^
+
+PrismaClientInitializationError: PrismaClient was instantiated without any options. A driver adapter is required to connect to your database.
+
+Pass a driver adapter to the PrismaClient constructor, for example:
+
+  import { PrismaPg } from '@prisma/adapter-pg'
+  import { PrismaClient } from './generated/prisma/client'
+
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+  const prisma = new PrismaClient({ adapter })
+
+Learn more about driver adapters: https://pris.ly/d/driver-adapters
+
+If you use Prisma Accelerate instead of connecting to your database directly, pass `accelerateUrl` to the PrismaClient constructor instead of `adapter`.
+    at new t (C:\Users\USER\projects\nation-market\backend\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:390:15)
+    at Database (C:\Users\USER\projects\nation-market\backend\scripts\migrate_data_to_pg.ts:5:16)
+    at Object.<anonymous> (C:\Users\USER\projects\nation-market\backend\scripts\migrate_data_to_pg.ts:248:6)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+    at Object.transformer (C:\Users\USER\projects\nation-market\backend\node_modules\tsx\dist\register-C557imBs.cjs:9:3619)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at loadCJSModuleWithModuleLoad (node:internal/modules/esm/translators:372:15)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:244:9) {
+  clientVersion: '7.9.1',
+  errorCode: undefined,
+  retryable: undefined
+}
+
+Node.js v24.18.1

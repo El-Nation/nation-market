@@ -14,15 +14,32 @@ import riderRoutes from './routes/rider.routes';
 dotenv.config();
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME as string,
+  api_key: process.env.CLOUDINARY_API_KEY as string,
+  api_secret: process.env.CLOUDINARY_API_SECRET as string
 });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const allowedOrigins = [
+  process.env.FRONTEND_CUSTOMER_URL,
+  process.env.FRONTEND_VENDOR_URL,
+  process.env.FRONTEND_ADMIN_URL,
+  process.env.FRONTEND_RIDER_URL,
+].filter(Boolean) as string[];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Allow no origin
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy violation'), false);
+    }
+  },
+  credentials: true
+}));
 app.use((req, res, next) => { console.log('[ROUTE HIT]', req.method, req.url); next(); });
 app.use(express.json());
 

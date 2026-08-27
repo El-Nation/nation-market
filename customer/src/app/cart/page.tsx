@@ -4,7 +4,7 @@ import { useCartStore } from '../../store/cartStore';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../store/authStore';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function MobileGroupedCartPage() {
   const { items, removeItem, updateQty, clearCart } = useCartStore();

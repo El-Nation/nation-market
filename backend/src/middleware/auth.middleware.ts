@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'NATION_MARKET_SUPER_SECRET_KEY_2026';
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'development' ? 'NATION_MARKET_SUPER_SECRET_KEY_2026' : '');
+if (!JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined in production.');
+  process.exit(1);
+}
 
 export const protect = (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.split(' ')[1];

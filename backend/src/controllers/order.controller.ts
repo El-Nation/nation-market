@@ -78,7 +78,7 @@ export const createOrder = async (req: Request, res: Response) => {
     const numVendors = Object.keys(itemsByVendor).length;
     
     for (const vendorId of Object.keys(itemsByVendor)) {
-      const vendorItems = itemsByVendor[vendorId];
+      const vendorItems: any = itemsByVendor[vendorId];
       const subtotal = vendorItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
       const deliveryFee = type === 'DELIVERY' ? (1500 / numVendors) : 0;
       const platformFee = (500 / numVendors);
@@ -108,7 +108,7 @@ export const createOrder = async (req: Request, res: Response) => {
 
     // 3. Create Orders (one per vendor)
     for (const vendorId of Object.keys(itemsByVendor)) {
-      const vendorItems = itemsByVendor[vendorId];
+      const vendorItems: any = itemsByVendor[vendorId];
       const subtotal = vendorItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
       const deliveryFee = type === 'DELIVERY' ? (1500 / numVendors) : 0;
       const platformFee = (500 / numVendors);
@@ -147,7 +147,7 @@ export const createOrder = async (req: Request, res: Response) => {
 
     // 4. Initialize Paystack Transaction if Paystack Secret Key is configured
     const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
-    const frontendUrl = process.env.FRONTEND_CUSTOMER_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_CUSTOMER_URL as string;
     let paystackAuthUrl = '';
 
     if (paystackSecret && !paystackSecret.includes('placeholder')) {
@@ -213,7 +213,6 @@ export const getCustomerOrders = async (req: Request, res: Response) => {
           items: { include: { product: true } },
           vendor: { select: { id: true, storeName: true, logoUrl: true } },
           rider: { select: { id: true, vehicleType: true } },
-          rider: { select: { id: true, vehicleType: true } },
           parentOrder: { include: { payment: true } }
         },
         orderBy: { createdAt: 'desc' },
@@ -232,7 +231,7 @@ export const getCustomerOrders = async (req: Request, res: Response) => {
 export const getOrderById = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const order = await prisma.order.findUnique({
       where: { id },

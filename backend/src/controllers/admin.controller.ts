@@ -177,7 +177,7 @@ export const createSubcategory = async (req: Request, res: Response) => {
 
 export const updateSubcategory = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { name, categoryId } = req.body;
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     const updated = await prisma.subcategory.update({
@@ -190,7 +190,7 @@ export const updateSubcategory = async (req: Request, res: Response) => {
 
 export const deleteSubcategory = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     await prisma.subcategory.delete({ where: { id } });
     res.json({ success: true, message: 'Deleted cleanly' });
   } catch (error: any) { res.status(500).json({ success: false, message: error.message }); }

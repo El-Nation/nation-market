@@ -1,14 +1,16 @@
 import { Request, Response } from 'express';
 import { prisma } from '../prisma';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { sendNationMarketEmail } from '../utils/mailer';
 import { generateSecret, verify } from 'otplib';
-import QRCode from 'qrcode';
+import * as QRCode from 'qrcode';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'NATION_MARKET_SUPER_SECRET_KEY_2026';
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'development' ? 'NATION_MARKET_SUPER_SECRET_KEY_2026' : '');
+if (!JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined in production.');
+  process.exit(1);
+}
 
 const generateToken = (id: string, role: string) => {
   return jwt.sign({ id, role }, JWT_SECRET, { expiresIn: '30d' });
@@ -156,7 +158,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) { return res.status(404).json({ success: false, message: 'User not found' }); }
     const resetToken = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '15m' });
-    const resetUrl = `http://localhost:3000/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_CUSTOMER_URL}/reset-password?token=${resetToken}`;
     await sendNationMarketEmail(
       user.email,
       'Secure Password Reset',

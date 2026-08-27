@@ -48,7 +48,7 @@ export default function VendorRegister() {
     if (!termsAccepted) { alert('You must read and accept the NATION MARKET Vendor Rules & Agreement to continue.'); return; }
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/vendor/apply', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/vendor/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -61,7 +61,7 @@ export default function VendorRegister() {
       const data = await res.json();
       if (data.success && data.data) {
         setAuth(data.data.token, data.data.role);
-        window.location.href = `http://localhost:3001/?token=${data.data.token}`;
+        window.location.href = (process.env.NEXT_PUBLIC_VENDOR_URL || '') + '/?token=' + data.data.token;
       } else {
         alert(data.message || 'Registration failed');
       }
@@ -81,7 +81,7 @@ export default function VendorRegister() {
             <img src="/logo.png" alt="NATION MARKET" className="nav-logo" />
           </div>
           <div className="login-link">
-            <span>Have an account?</span> <a href="http://localhost:3000/login">Log in</a>
+            <span>Have an account?</span> <a href={(process.env.NEXT_PUBLIC_CUSTOMER_URL || '') + '/login'}>Log in</a>
           </div>
         </header>
         
@@ -313,7 +313,7 @@ export default function VendorRegister() {
               <img src="/logo.png" alt="NATION MARKET" className="nav-logo" />
             </div>
             <div className="login-link">
-              <span>Have an account?</span> <a href="http://localhost:3000/login">Log in</a>
+              <span>Have an account?</span> <a href={(process.env.NEXT_PUBLIC_CUSTOMER_URL || '') + '/login'}>Log in</a>
             </div>
           </header>
 

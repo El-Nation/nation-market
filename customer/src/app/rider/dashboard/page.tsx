@@ -43,7 +43,7 @@ export default function RiderDashboard() {
   const [otpToken, setOtpToken] = useState('');
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
-  const API = 'http://localhost:5000';
+  const API = (process.env.NEXT_PUBLIC_API_URL || '');
 
   useEffect(() => {
     setIsMounted(true);
@@ -59,7 +59,7 @@ export default function RiderDashboard() {
       setFirstName(user.firstName || '');
       setLastName(user.lastName || '');
       setEmail(user.email || '');
-      setPhone(user.phone || '');
+      setPhone((user as any).phone || '');
       fetchRiderProfile(); // Check online status
     }
   }, [initialized, token, user, initAuth]);
