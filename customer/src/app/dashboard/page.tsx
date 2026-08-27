@@ -15,7 +15,7 @@ const EMPTY_FORM: AddressForm = { label: 'Home', line1: '', line2: '', city: '',
 
 export default function CustomerDashboard() {
   const router = useRouter();
-  const { user, token, logout } = useAuthStore();
+  const { user, token, logout, initialized, initAuth } = useAuthStore();
   const [authorized, setAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState('Profile');
   const [isMounted, setIsMounted] = useState(false);
@@ -58,6 +58,12 @@ export default function CustomerDashboard() {
   // ── Auth guard
   useEffect(() => {
     setIsMounted(true);
+    
+    if (!initialized) {
+      initAuth();
+      return;
+    }
+
     if (!token || user?.role !== 'CUSTOMER') {
       window.location.href = '/login';
     } else {
@@ -66,7 +72,7 @@ export default function CustomerDashboard() {
       setLastName(user.lastName || '');
       setEmail(user.email || '');
     }
-  }, [token, user]);
+  }, [token, user, initialized, initAuth]);
 
   // ── Fetch addresses on tab switch
   useEffect(() => {

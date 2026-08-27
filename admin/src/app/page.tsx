@@ -63,7 +63,7 @@ function AdminDashboardContent() {
     
     // After URL params are cleared or if none exist, enforce protection
     if (!token || user?.role !== 'ADMIN') {
-      window.location.href = (process.env.NEXT_PUBLIC_CUSTOMER_URL || '') + '/login';
+      window.location.href = (process.env.NEXT_PUBLIC_CUSTOMER_URL || 'https://nationmarket.eghedev.com') + '/login';
     } else {
       setAuthorized(true);
       // Only fetch once
@@ -157,7 +157,7 @@ function AdminDashboardContent() {
 
   const handleLogout = () => {
     logout();
-    window.location.replace((process.env.NEXT_PUBLIC_CUSTOMER_URL || '') + '/login');
+    window.location.replace((process.env.NEXT_PUBLIC_CUSTOMER_URL || 'https://nationmarket.eghedev.com') + '/login');
   };
 
   const API = (process.env.NEXT_PUBLIC_API_URL || '');
