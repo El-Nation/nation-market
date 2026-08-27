@@ -38,11 +38,12 @@ export const createOrder = async (req: Request, res: Response) => {
     // 2. Validate inventory & group items by vendor
     const itemsByVendor: Record<string, { product: any; quantity: number; price: number }[]> = {};
 
-    for (const item of items) {
-      const p = productMap.get(item.productId);
+    const itemList = (items as any[]) || [];
+    for (const item of itemList) {
+      const p = productMap.get((item as any).productId);
       if (!p) continue;
 
-      const qty = Math.max(1, parseInt(item.quantity) || 1);
+      const qty = Math.max(1, parseInt((item as any).quantity) || 1);
       if (p.inventory > 0 && p.inventory < qty) {
         return res.status(400).json({ success: false, message: `Insufficient inventory for ${p.name}` });
       }

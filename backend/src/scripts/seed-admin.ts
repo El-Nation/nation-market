@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import Database from 'better-sqlite3';
+
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -8,10 +7,7 @@ import path from 'path';
 // Load env vars
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const adapter = new PrismaBetterSqlite3({
-  url: process.env.DATABASE_URL || 'file:./dev.db'
-});
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function seedAdmin() {
   console.log('Seeding initial admin account...');
