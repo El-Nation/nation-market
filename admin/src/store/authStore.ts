@@ -33,7 +33,7 @@ export const useAuthStore = create<AuthState>((set) => {
       localStorage.removeItem('jwt_token');
       localStorage.removeItem('user_role');
       set({ user: null, token: null });
-      window.location.href = (process.env.NEXT_PUBLIC_CUSTOMER_URL || 'https://nationmarket.eghedev.com') + '/login'; // Global portal
+      window.location.href = 'https://nationmarket.eghedev.com/login'; // Global portal
     },
   };
 });

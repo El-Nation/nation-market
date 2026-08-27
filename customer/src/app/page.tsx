@@ -757,9 +757,9 @@ export default function MarketplacePage() {
                   <button
                     onClick={() => {
                       setProfileModalOpen(false);
-                      if (user.role === 'ADMIN') window.location.href = (process.env.NEXT_PUBLIC_ADMIN_URL || '');
-                      else if (user.role === 'VENDOR') window.location.href = (process.env.NEXT_PUBLIC_VENDOR_URL || '');
-                      else if (user.role === 'RIDER') window.location.href = (process.env.NEXT_PUBLIC_RIDER_URL || '');
+                      if (user.role === 'ADMIN') window.location.href = 'https://admin.eghedev.com';
+                      else if (user.role === 'VENDOR') window.location.href = 'https://vendor.eghedev.com';
+                      else if (user.role === 'RIDER') window.location.href = '/rider/dashboard';
                       else router.push('/dashboard');
                     }}
                     style={{ flex: 2, background: '#059669', color: '#fff', border: 'none', borderRadius: '12px', padding: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
