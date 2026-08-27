@@ -95,9 +95,9 @@ export default function VendorStorePage() {
         .store-info h1 { font-size: 1.4rem; font-weight: 800; color: #111; margin-bottom: 0.3rem; }
         .store-cat-badge { background: #eff6ff; color: #1d4ed8; border-radius: 8px; padding: 0.2rem 0.6rem; font-size: 0.78rem; font-weight: 600; display: inline-block; margin-bottom: 0.5rem; }
         .store-meta { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.82rem; color: #6b7280; }
-        .store-hours-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; }
+        .store-hours-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; }
         .store-hours-row { background: #f8f9fa; border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.8rem; }
-        .store-products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; }
+        .store-products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(145px, 100%), 1fr)); gap: 1.25rem; }
         .store-product-card { background: #fff; border: 1px solid #f0f0f0; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: all 0.2s; }
         .store-product-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
         .store-product-img { width: 100%; height: 160px; object-fit: cover; cursor: pointer; background: #f0f0f0; display: block; }

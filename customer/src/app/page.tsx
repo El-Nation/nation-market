@@ -292,8 +292,8 @@ export default function MarketplacePage() {
         .cd-hero-img { width: 100%; height: 100%; object-fit: cover; }
 
         /* ══ CATEGORY GRID ══ */
-        .cd-section { max-width: 1280px; margin: 2rem auto; padding: 0 1.5rem; }
-        .cd-cat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.1rem; }
+        .cd-section { max-width: 1280px; margin: 2rem auto; padding: 0 1.5rem; overflow-x: hidden; }
+        .cd-cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(120px, 100%), 1fr)); gap: 1.1rem; }
         .cd-cat-tile { border-radius: 20px; padding: 1.5rem 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.75rem; cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); border: 1px solid rgba(0,0,0,0.04); position: relative; min-height: 130px; }
         .cd-cat-tile:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }
         .cd-cat-tile-badge { position: absolute; top: 10px; right: 10px; background: #ef4444; color: #fff; border-radius: 99px; padding: 0.15rem 0.5rem; font-size: 0.65rem; font-weight: 800; }
@@ -313,7 +313,7 @@ export default function MarketplacePage() {
         .cd-view-all { font-size: 0.88rem; color: #059669; font-weight: 700; text-decoration: none; }
         .cd-view-all:hover { text-decoration: underline; }
 
-        .cd-stores-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+        .cd-stores-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 1.25rem; }
         .cd-store-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden; cursor: pointer; text-decoration: none; transition: all 0.25s; display: flex; flex-direction: column; }
         .cd-store-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.08); border-color: #cbd5e1; }
         .cd-store-cover-wrap { position: relative; height: 130px; background: #e2e8f0; }
@@ -326,7 +326,7 @@ export default function MarketplacePage() {
         .cd-store-meta { display: flex; align-items: center; gap: 0.6rem; font-size: 0.78rem; color: #64748b; margin-top: 0.4rem; flex-wrap: wrap; }
         .cd-meta-tag { background: #f1f5f9; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 600; }
 
-        .cd-prods-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+        .cd-prods-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(145px, 100%), 1fr)); gap: 1.25rem; }
         .cd-prod-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden; transition: all 0.25s; display: flex; flex-direction: column; }
         .cd-prod-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.08); }
         .cd-prod-img-wrap { position: relative; height: 170px; background: #f8fafc; cursor: pointer; }
@@ -357,9 +357,7 @@ export default function MarketplacePage() {
 
         /* Medium desktop / large tablet (900–1280px) */
         @media (max-width: 1280px) and (min-width: 900px) {
-          .cd-cat-grid { grid-template-columns: repeat(4, 1fr); }
-          .cd-stores-grid { grid-template-columns: repeat(3, 1fr); }
-          .cd-prods-grid { grid-template-columns: repeat(3, 1fr); }
+          .cd-hero-banner { padding: 0 1.25rem; }
         }
 
         /* Tablet (600–900px) */
@@ -371,28 +369,30 @@ export default function MarketplacePage() {
           .cd-stores-grid { grid-template-columns: repeat(2, 1fr); }
           .cd-prods-grid { grid-template-columns: repeat(2, 1fr); }
           .cd-hero-card { flex-direction: column; text-align: center; padding: 1.75rem 1.25rem; }
-          .cd-hero-img-wrap { width: 100%; height: 150px; }
+          .cd-hero-img-wrap { width: 100%; height: 200px; max-width: 400px; margin: 0 auto; }
           .cd-signup-btn span { display: none; }
         }
 
         /* Mobile (< 600px) */
         @media (max-width: 600px) {
           .cd-header-main { padding: 0.55rem 1rem; gap: 0.5rem; flex-wrap: wrap; }
-          .cd-logo { height: 56px; }
-          .cd-search-wrap { order: 4; flex: 0 0 100%; min-width: 0; margin-top: 0.25rem; }
-          .cd-nav-dock-bar { padding: 0.4rem 1rem; }
+          .cd-logo { height: 50px; max-width: 140px; }
+          .cd-search-wrap { order: 4; flex: 0 0 100%; min-width: 100%; margin-top: 0.25rem; }
+          .cd-nav-dock-bar { padding: 0.4rem 0.5rem; }
           .cd-dock-item { padding: 0.4rem 0.6rem; font-size: 0.78rem; gap: 0.2rem; }
-          .cd-cat-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
-          .cd-stores-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-          .cd-prods-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+          .cd-section { padding: 0 1rem; }
           .cd-signup-btn { padding: 0.5rem 0.85rem; font-size: 0.78rem; }
           .cd-filter-btn { padding: 0.5rem 0.85rem; font-size: 0.78rem; }
         }
 
-        /* Very small phones (< 360px) */
-        @media (max-width: 360px) {
-          .cd-logo { height: 48px; }
+        /* Very small phones (< 375px) */
+        @media (max-width: 375px) {
+          .cd-header-main { padding: 0.5rem; gap: 0.4rem; }
+          .cd-logo { height: 42px; max-width: 110px; }
           .cd-filter-btn { display: none; }
+          .cd-cart-btn { padding: 0.4rem 0.75rem; font-size: 0.75rem; }
+          .cd-signup-btn { padding: 0.4rem 0.75rem; font-size: 0.75rem; }
+          .cd-section-title { font-size: 1.15rem; }
         }
       `}</style>
 
@@ -723,20 +723,20 @@ export default function MarketplacePage() {
             <p style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '1.5rem' }}>Need assistance with an order, delivery, or vendor enquiry?</p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <a href="https://wa.me/2347066784058" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
                 <span style={{ fontSize: '1.5rem' }}>💬</span>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#166534' }}>Live Chat Support</div>
                   <div style={{ fontSize: '0.78rem', color: '#15803d' }}>Available 24/7 for instant assistance</div>
                 </div>
-              </div>
-              <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              </a>
+              <a href="tel:07066784058" style={{ textDecoration: 'none', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
                 <span style={{ fontSize: '1.5rem' }}>📞</span>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#075985' }}>Call Center</div>
-                  <div style={{ fontSize: '0.78rem', color: '#0369a1' }}>+234 800 NATION MARKET</div>
+                  <div style={{ fontSize: '0.78rem', color: '#0369a1' }}>07066784058</div>
                 </div>
-              </div>
+              </a>
             </div>
           </div>
         </div>

@@ -878,7 +878,8 @@ export default function CustomerDashboard() {
           .form-row { grid-template-columns: 1fr; }
         }
         @media (max-width: 480px) {
-          .metrics-grid { grid-template-columns: 1fr 1fr; }
+          .metrics-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+          .metric-card { padding: 1rem; flex-direction: column; text-align: center; gap: 0.5rem; }
           .profile-avatar-lg { width: 72px; height: 72px; font-size: 1.6rem; }
           .profile-fullname { font-size: 1.3rem; }
         }

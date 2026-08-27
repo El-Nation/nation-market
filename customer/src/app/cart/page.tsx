@@ -271,6 +271,16 @@ export default function MobileGroupedCartPage() {
         .dock-label { font-size: 0.72rem; font-weight: 700; color: #94a3b8; }
         .dock-btn.active .dock-label { color: #fff; font-size: 0.8rem; }
         .dock-badge { position: absolute; top: 0px; right: 6px; background: #fbbf24; color: #111; font-size: 0.65rem; font-weight: 800; height: 20px; width: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        
+        @media (max-width: 500px) {
+          .main-content { padding: 0 0.5rem; }
+          .vendor-block { padding: 1rem; }
+          .v-item { flex-wrap: wrap; gap: 0.5rem; }
+          .v-item-img { width: 44px; height: 44px; }
+          .v-qty-wrap { margin-left: auto; width: 100%; justify-content: flex-end; padding: 0.25rem 0.5rem; }
+          .v-deliver-wrap { flex-direction: column; }
+          .global-address-pane { padding: 1rem; }
+        }
       `}</style>
       
       <header className="cart-app-header">

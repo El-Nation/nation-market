@@ -68,6 +68,10 @@ function CheckoutSuccessContent() {
         .btn-secondary { flex: 1; background: #f3f4f6; color: #374151; border: none; padding: 0.85rem; border-radius: 10px; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.95rem; }
         .btn-primary:hover { background: #004a82; }
         .btn-secondary:hover { background: #e5e7eb; }
+        @media (max-width: 480px) {
+          .success-card { padding: 1.5rem 1rem; }
+          .btn-group { flex-direction: column; }
+        }
       `}</style>
 
       <div className="success-card">

@@ -140,9 +140,9 @@ export default function MobileCategoryPage() {
         .main-content { padding: 0 1.25rem; max-width: 1200px; margin: 0 auto; }
         .section-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 1.25rem; color: #111; }
         
-        .cd-prods-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-        @media (min-width: 768px) { .cd-prods-grid { grid-template-columns: repeat(3, 1fr); gap: 1.25rem; } }
-        @media (min-width: 1024px) { .cd-prods-grid { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; } }
+        .cd-prods-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(145px, 100%), 1fr)); gap: 1rem; }
+        @media (min-width: 768px) { .cd-prods-grid { gap: 1.25rem; } }
+        @media (min-width: 1024px) { .cd-prods-grid { gap: 1.5rem; } }
         
         .cd-prod-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.04); text-decoration: none; color: inherit; display: flex; flex-direction: column; transition: all 0.25s; cursor: pointer; border: 1px solid #f1f5f9; }
         .cd-prod-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); border-color: #e2e8f0; }

@@ -32,7 +32,7 @@ export default function Login() {
       if (data.success) {
         loginAction(data.data, data.data.token);
         if (data.data.role === 'ADMIN') window.location.href = `http://localhost:3002?token=${data.data.token}&role=ADMIN`;
-        else if (data.data.role === 'VENDOR') window.location.href = `http://localhost:3001?token=${data.data.token}&role=VENDOR`;
+        else if (data.data.role === 'VENDOR') window.location.href = `http://localhost:3000?token=${data.data.token}&role=VENDOR`;
         else if (data.data.role === 'RIDER') window.location.href = '/rider/dashboard';
         else router.push('/dashboard');
       } else {
@@ -205,6 +205,11 @@ export default function Login() {
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        
+        @media (max-width: 480px) {
+          .auth-card { padding: 1.5rem 1.25rem 2.5rem; }
+          .modal-content { padding: 1.5rem 1.25rem; }
+        }
       `}</style>
     </div>
   );

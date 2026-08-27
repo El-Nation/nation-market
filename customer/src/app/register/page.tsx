@@ -163,6 +163,11 @@ export default function Register() {
         
         .chowdeck-btn-secondary { background: white; color: #10b981; border: 2px solid #10b981; padding: 1.25rem; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; width: 100%; display: block; text-align: center; }
         .chowdeck-btn-secondary:hover { background: #f0fdf4; }
+        @media (max-width: 480px) {
+          .chowdeck-card { padding: 2rem 1.25rem; }
+          .form-row { grid-template-columns: 1fr; gap: 1rem; }
+          .country-phone-row { grid-template-columns: 100px 1fr; }
+        }
       `}</style>
     </div>
   );
