@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 
-// Legacy bindings removed
+const prisma = new PrismaClient();
 
 const categoriesWithSubcategories = [
   {
