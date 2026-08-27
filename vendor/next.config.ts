@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  basePath: '/vendor',
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
