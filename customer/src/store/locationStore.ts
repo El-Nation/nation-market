@@ -22,11 +22,6 @@ export const useLocationStore = create<LocationState>((set) => ({
       const saved = localStorage.getItem('nm_location');
       if (saved) {
         set({ location: saved });
-      } else {
-        // Auto detect on first load if not present
-        if (navigator.geolocation) {
-          useLocationStore.getState().detectLocation();
-        }
       }
     }
   },
