@@ -31,8 +31,8 @@ export default function Login() {
       const data = await res.json();
       if (data.success) {
         loginAction(data.data, data.data.token);
-        if (data.data.role === 'ADMIN') window.location.href = (process.env.NEXT_PUBLIC_ADMIN_URL || '') + '/?token=${data.data.token}&role=ADMIN';
-        else if (data.data.role === 'VENDOR') window.location.href = (process.env.NEXT_PUBLIC_CUSTOMER_URL || '') + '/?token=${data.data.token}&role=VENDOR';
+        if (data.data.role === 'ADMIN') window.location.href = `${process.env.NEXT_PUBLIC_ADMIN_URL || 'https://admin.eghedev.com'}/?token=${data.data.token}&role=ADMIN`;
+        else if (data.data.role === 'VENDOR') window.location.href = `${process.env.NEXT_PUBLIC_VENDOR_URL || 'https://vendor.eghedev.com'}/?token=${data.data.token}&role=VENDOR`;
         else if (data.data.role === 'RIDER') window.location.href = '/rider/dashboard';
         else router.push('/dashboard');
       } else {
@@ -122,7 +122,7 @@ export default function Login() {
                 </div>
               </div>
               
-              <div className="role-card" onClick={() => router.push((process.env.NEXT_PUBLIC_VENDOR_URL || '') + '/register')}>
+              <div className="role-card" onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_VENDOR_URL || 'https://vendor.eghedev.com'}/register`}>
                 <div className="role-icon vendor-icon"><Store size={22} /></div>
                 <div className="role-info">
                   <h4>Vendor</h4>
