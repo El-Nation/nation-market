@@ -31,8 +31,8 @@ export default function Login() {
       const data = await res.json();
       if (data.success) {
         loginAction(data.data, data.data.token);
-        if (data.data.role === 'ADMIN') window.location.href = `${process.env.NEXT_PUBLIC_ADMIN_URL || 'https://admin.eghedev.com'}/?token=${data.data.token}&role=ADMIN`;
-        else if (data.data.role === 'VENDOR') window.location.href = `${process.env.NEXT_PUBLIC_VENDOR_URL || 'https://vendor.eghedev.com'}/?token=${data.data.token}&role=VENDOR`;
+        if (data.data.role === 'ADMIN') window.location.href = `https://admin.eghedev.com/?token=${data.data.token}&role=ADMIN`;
+        else if (data.data.role === 'VENDOR') window.location.href = `https://vendor.eghedev.com/?token=${data.data.token}&role=VENDOR`;
         else if (data.data.role === 'RIDER') window.location.href = '/rider/dashboard';
         else router.push('/dashboard');
       } else {
