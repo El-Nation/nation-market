@@ -11,6 +11,15 @@ import orderRoutes from './routes/order.routes';
 import paymentRoutes from './routes/payment.routes';
 import riderRoutes from './routes/rider.routes';
 
+// Prevent server from crashing on unhandled errors (Keep 24/7 online)
+process.on('uncaughtException', (err) => {
+    console.error('CRITICAL: Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('CRITICAL: Unhandled Rejection:', reason, promise);
+});
+
 dotenv.config();
 
 cloudinary.config({
