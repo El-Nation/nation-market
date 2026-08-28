@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   description: "Discover and buy from hundreds of trusted vendors across groceries, fashion, electronics, food, agriculture, pharmacy, books, furniture, and more.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
