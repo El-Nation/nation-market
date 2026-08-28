@@ -31,7 +31,7 @@ export default function RiderRegistration() {
     setLoading(true);
     
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/rider/apply', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/auth/rider/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

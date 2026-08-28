@@ -48,7 +48,7 @@ export default function VendorRegister() {
     if (!termsAccepted) { alert('You must read and accept the NATION MARKET Vendor Rules & Agreement to continue.'); return; }
     setIsSubmitting(true);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/vendor/apply', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/auth/vendor/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

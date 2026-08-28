@@ -97,7 +97,7 @@ function VendorDashboardContent() {
     if (editSubId) formData.append('subcategoryId', editSubId);
     if (editImgRef.current?.files?.[0]) formData.append('image', editImgRef.current.files[0]);
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/products/${editingProduct.id}', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/products/${editingProduct.id}', {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -128,7 +128,7 @@ function VendorDashboardContent() {
     if (!token) return;
     try {
       // Fetch real user identity (firstName, lastName, email, phone)
-      const meRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+      const meRes = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
       const meData = await meRes.json();
       if (meData.success) {
         setFirstName(meData.data.firstName || '');
@@ -138,7 +138,7 @@ function VendorDashboardContent() {
       }
 
       // Fetch Vendor Store Profile
-      const profRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/profile', { headers: { 'Authorization': `Bearer ${token}` } });
+      const profRes = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/profile', { headers: { 'Authorization': `Bearer ${token}` } });
       const profData = await profRes.json();
       if (profData.success) {
         setVendorProfile(profData.data);
@@ -154,24 +154,24 @@ function VendorDashboardContent() {
       }
       
       // Fetch Subcategories
-      const subRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/subcategories', { headers: { 'Authorization': `Bearer ${token}` } });
+      const subRes = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/subcategories', { headers: { 'Authorization': `Bearer ${token}` } });
       const subData = await subRes.json();
       if (subData.success) {
         setVendorSubcategories(subData.data);
         setSelectedSubIds(subData.data.map((s: any) => s.id));
       }
 
-      const availRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/subcategories/available', { headers: { 'Authorization': `Bearer ${token}` } });
+      const availRes = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/subcategories/available', { headers: { 'Authorization': `Bearer ${token}` } });
       const availData = await availRes.json();
       if (availData.success) setAvailableSubcategories(availData.data);
 
       // Fetch Products
-      const prodRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/products', { headers: { 'Authorization': `Bearer ${token}` } });
+      const prodRes = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/products', { headers: { 'Authorization': `Bearer ${token}` } });
       const prodData = await prodRes.json();
       if (prodData.success) setVendorProducts(prodData.data);
 
       // Fetch Orders
-      const ordRes = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/orders', { headers: { 'Authorization': `Bearer ${token}` } });
+      const ordRes = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/orders', { headers: { 'Authorization': `Bearer ${token}` } });
       const ordData = await ordRes.json();
       if (ordData.success) setVendorOrders(ordData.data);
 
@@ -215,7 +215,7 @@ function VendorDashboardContent() {
 
   const handleUpdate = async (endpoint: string, payload: any, successMessage: string) => {
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/${endpoint}', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/auth/${endpoint}', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -255,7 +255,7 @@ function VendorDashboardContent() {
     formData.append(field, file);
 
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/store', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/store', {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         body: formData
@@ -285,7 +285,7 @@ function VendorDashboardContent() {
     formData.append('openingHours', JSON.stringify(scheduleForm));
 
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/store', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/store', {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         body: formData
@@ -306,7 +306,7 @@ function VendorDashboardContent() {
 
   const handleLinkSubcategories = async () => {
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/subcategories/link', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/subcategories/link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ subcategoryIds: selectedSubIds })
@@ -332,7 +332,7 @@ function VendorDashboardContent() {
     if (productImgRef.current?.files?.[0]) formData.append('image', productImgRef.current.files[0]);
 
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/products', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/products', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -353,7 +353,7 @@ function VendorDashboardContent() {
   const deleteProduct = async (id: string) => {
     if (!window.confirm("Delete this product permanently?")) return;
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/products/${id}', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/products/${id}', {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -365,7 +365,7 @@ function VendorDashboardContent() {
     try {
       const formData = new FormData();
       formData.append('isAvailable', String(!current));
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/products/${id}', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/products/${id}', {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -378,12 +378,12 @@ function VendorDashboardContent() {
 
   const generate2FA = async () => {
     if (is2FAEnabled) { alert('2FA is already enabled.'); return; }
-    const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/2fa/generate', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/auth/2fa/generate', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (data.success) { setQrCode(data.data.qrCodeUrl); setSetupSecret(data.data.secret); }
   };
   const confirm2FA = async () => {
-    const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/2fa/enable', {
+    const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/auth/2fa/enable', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ token: otpToken })
@@ -394,7 +394,7 @@ function VendorDashboardContent() {
   };
   const disable2FA = async () => {
     if (!confirm('Disable Two-Factor Authentication? Your Vendor account will be highly vulnerable.')) return;
-    const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/auth/2fa/disable', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/auth/2fa/disable', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
     const data = await res.json();
     if (data.success) { alert(data.message); setIs2FAEnabled(false); }
   };
@@ -697,7 +697,7 @@ function VendorDashboardContent() {
                           fd.append('address', storeAddressForm);
                           fd.append('openingHours', JSON.stringify(scheduleForm));
                           fd.append('clearCover', 'true');
-                          const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/store', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: fd });
+                          const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/store', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: fd });
                           const d = await res.json();
                           if (d.success) { setCoverPreview(''); setCoverFileName(''); if (coverInputRef.current) coverInputRef.current.value = ''; fetchVendorData(); } else alert(d.message);
                         }}
@@ -752,7 +752,7 @@ function VendorDashboardContent() {
                           fd.append('address', storeAddressForm);
                           fd.append('openingHours', JSON.stringify(scheduleForm));
                           fd.append('clearLogo', 'true');
-                          const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/store', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: fd });
+                          const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/store', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: fd });
                           const d = await res.json();
                           if (d.success) { setLogoPreview(''); setLogoFileName(''); if (logoInputRef.current) logoInputRef.current.value = ''; fetchVendorData(); } else alert(d.message);
                         }}
@@ -828,7 +828,7 @@ function VendorDashboardContent() {
                     const actions = nextActions[order.status] || [];
 
                     const changeStatus = async (status: string) => {
-                      const res = await fetch((process.env.NEXT_PUBLIC_API_URL || '') + '/api/vendor/orders/${order.id}/status', {
+                      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !(process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').includes('localhost') ? (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com') : 'https://api.eghedev.com') + '/api/vendor/orders/${order.id}/status', {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ status })
