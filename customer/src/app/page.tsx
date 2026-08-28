@@ -204,7 +204,7 @@ export default function MarketplacePage() {
           cursor: pointer; white-space: nowrap;
           transition: background 0.2s;
         }
-        .cd-filter-btn:hover { background: #047857; }
+        @media (hover: hover) { .cd-filter-btn:hover { background: #047857; } }
 
         .cd-cart-btn {
           position: relative;
@@ -218,7 +218,7 @@ export default function MarketplacePage() {
           white-space: nowrap;
           transition: all 0.2s;
         }
-        .cd-cart-btn:hover { background: #e2e8f0; }
+        @media (hover: hover) { .cd-cart-btn:hover { background: #e2e8f0; } }
         .cd-cart-badge {
           position: absolute; top: -5px; right: -5px;
           background: #ef4444; color: #fff;
@@ -237,7 +237,7 @@ export default function MarketplacePage() {
           transition: background 0.2s, box-shadow 0.2s;
           font-family: inherit;
         }
-        .cd-signup-btn:hover { background: #047857; box-shadow: 0 4px 14px rgba(5,150,105,0.3); }
+        @media (hover: hover) { .cd-signup-btn:hover { background: #047857; box-shadow: 0 4px 14px rgba(5,150,105,0.3); } }
 
         /* ══ ROW 2: NAVIGATION DOCK ══ */
         .cd-nav-dock-bar {
@@ -269,7 +269,7 @@ export default function MarketplacePage() {
           font-family: inherit;
           white-space: nowrap;
         }
-        .cd-dock-item:hover { color: #059669; background: #f1f5f9; }
+        @media (hover: hover) { .cd-dock-item:hover { color: #059669; background: #f1f5f9; } }
         .cd-dock-item.active { background: #059669; color: #fff; font-weight: 700; box-shadow: 0 2px 8px rgba(5,150,105,0.25); }
 
         /* Search Dropdown */

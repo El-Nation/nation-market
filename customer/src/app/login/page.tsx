@@ -171,7 +171,7 @@ export default function Login() {
         .auth-footer-login a:hover { text-decoration: underline; }
         
         .auth-btn { background: #005b9f; color: white; border: none; padding: 0.85rem; border-radius: 8px; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; }
-        .auth-btn:hover { background: #00467a; transform: translateY(-1px); }
+        @media (hover: hover) { .auth-btn:hover { background: #00467a; transform: translateY(-1px); } }
         
         .divider-container { position: relative; display: flex; align-items: center; justify-content: center; margin: 2rem 0; text-align: center; }
         .divider-container::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; border-top: 1px solid #e5e7eb; z-index: 1; }
@@ -180,7 +180,7 @@ export default function Login() {
         .registration-section { text-align: center; margin-bottom: 0.5rem; }
         .no-account-text { margin: 0 0 1rem 0; color: #6b7280; font-size: 0.95rem; }
         .create-account-btn { background: transparent; border: 2px solid #e5e7eb; color: #374151; font-weight: 600; width: 100%; padding: 0.85rem; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
-        .create-account-btn:hover { border-color: #005b9f; color: #005b9f; background: #f8fbff; }
+        @media (hover: hover) { .create-account-btn:hover { border-color: #005b9f; color: #005b9f; background: #f8fbff; } }
         
         /* Modal Styles */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1.5rem; animation: fadeIn 0.15s ease-out; }
@@ -193,7 +193,7 @@ export default function Login() {
 
         .role-cards { display: flex; flex-direction: column; gap: 1.25rem; text-align: left; }
         .role-card { display: flex; align-items: center; padding: 1.25rem 1.75rem; border: 1px solid #e5e7eb; border-radius: 16px; cursor: pointer; transition: all 0.2s ease; background: white; }
-        .role-card:hover { border-color: #005b9f; box-shadow: 0 10px 25px rgba(0,91,159,0.1); transform: translateY(-3px); background: #f8fbff; }
+        @media (hover: hover) { .role-card:hover { border-color: #005b9f; box-shadow: 0 10px 25px rgba(0,91,159,0.1); transform: translateY(-3px); background: #f8fbff; } }
         
         .role-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-right: 1.5rem; flex-shrink: 0; }
         .customer-icon { background: #e0f2fe; color: #0284c7; }
