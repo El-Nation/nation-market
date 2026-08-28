@@ -21,6 +21,7 @@ function AdminDashboardContent() {
   const searchParams = useSearchParams();
   const { user, token, login, logout } = useAuthStore();
   const [authorized, setAuthorized] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -49,6 +50,7 @@ function AdminDashboardContent() {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     const urlToken = searchParams.get('token');
     const urlRole = searchParams.get('role');
     
@@ -219,7 +221,7 @@ function AdminDashboardContent() {
     { id: 'Settings', icon: Settings, label: 'Settings' }
   ];
 
-  if (!authorized) return null;
+  if (!isMounted || !authorized) return null;
 
   return (
     <div className="layout">
