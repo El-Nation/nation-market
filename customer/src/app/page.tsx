@@ -375,23 +375,26 @@ export default function MarketplacePage() {
 
         /* Mobile (< 600px) */
         @media (max-width: 600px) {
-          .cd-header-main { padding: 0.55rem 1rem; gap: 0.5rem; flex-wrap: wrap; }
-          .cd-logo { height: 50px; max-width: 140px; }
+          .cd-header-main { padding: 0.55rem 0.5rem; gap: 0.25rem; flex-wrap: wrap; justify-content: space-between; }
+          .cd-logo-wrap { flex: 0 0 auto; }
+          .cd-logo { height: 40px; max-width: 120px; }
           .cd-search-wrap { order: 4; flex: 0 0 100%; min-width: 100%; margin-top: 0.25rem; }
           .cd-nav-dock-bar { padding: 0.4rem 0.5rem; }
           .cd-dock-item { padding: 0.4rem 0.6rem; font-size: 0.78rem; gap: 0.2rem; }
           .cd-section { padding: 0 1rem; }
-          .cd-signup-btn { padding: 0.5rem 0.85rem; font-size: 0.78rem; }
-          .cd-filter-btn { padding: 0.5rem 0.85rem; font-size: 0.78rem; }
+          .cd-header-actions { gap: 0.25rem; }
+          .cd-signup-btn { padding: 0.45rem 0.65rem; font-size: 0.75rem; }
+          .cd-signup-btn span { display: inline; } /* Keep the text visible if possible, but shrink padding */
+          .cd-cart-btn { padding: 0.45rem 0.65rem; font-size: 0.75rem; }
+          .cd-filter-btn { display: none; }
         }
 
         /* Very small phones (< 375px) */
         @media (max-width: 375px) {
-          .cd-header-main { padding: 0.5rem; gap: 0.4rem; }
-          .cd-logo { height: 42px; max-width: 110px; }
-          .cd-filter-btn { display: none; }
-          .cd-cart-btn { padding: 0.4rem 0.75rem; font-size: 0.75rem; }
-          .cd-signup-btn { padding: 0.4rem 0.75rem; font-size: 0.75rem; }
+          .cd-header-main { padding: 0.5rem 0.25rem; gap: 0.25rem; }
+          .cd-logo { height: 35px; max-width: 100px; }
+          .cd-cart-btn { padding: 0.4rem 0.5rem; font-size: 0.7rem; }
+          .cd-signup-btn { padding: 0.4rem 0.5rem; font-size: 0.7rem; }
           .cd-section-title { font-size: 1.15rem; }
         }
       `}</style>

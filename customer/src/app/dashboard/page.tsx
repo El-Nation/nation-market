@@ -755,7 +755,7 @@ export default function CustomerDashboard() {
         .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 45; }
 
         /* ── Main Zone ── */
-        .main-zone { flex: 1; padding: 2.5rem 3rem; overflow-y: auto; max-width: 1100px; }
+        .main-zone { flex: 1; padding: 2.5rem 3rem; overflow-x: hidden; max-width: 1100px; min-width: 0; box-sizing: border-box; }
         .tab-pane { }
         .fade-in { animation: fadeIn 0.3s ease; }
         .page-header { margin-bottom: 2rem; }
@@ -869,19 +869,19 @@ export default function CustomerDashboard() {
 
         /* ── Responsive ── */
         @media (max-width: 1024px) {
-          .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-          .settings-grid { grid-template-columns: 1fr; }
-          .main-zone { padding: 2rem; }
-        }
-        @media (max-width: 768px) {
+          .layout-app { flex-direction: column; }
           .side-nav { position: fixed; left: 0; top: 0; height: 100vh; transform: translateX(-100%); box-shadow: 4px 0 20px rgba(0,0,0,0.1); }
           .side-nav.open { transform: translateX(0); }
           .mobile-header { display: flex; }
           .main-zone { padding: 1.25rem; }
           .profile-hero { flex-direction: column; text-align: center; }
-          .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+          .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
           .address-grid { grid-template-columns: 1fr; }
           .form-row { grid-template-columns: 1fr; }
+          .settings-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+          .metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
         }
         @media (max-width: 480px) {
           .metrics-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }

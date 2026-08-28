@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '../store/authStore';
-import { Store, Package, ListOrdered, DollarSign, Settings, LogOut, TrendingUp, Star, Box, Search, Plus, X, Layers } from 'lucide-react';
+import { Store, Package, ListOrdered, DollarSign, Settings, LogOut, TrendingUp, Star, Box, Search, Plus, X, Layers, Menu } from 'lucide-react';
 import { optimizeCloudinaryUrl } from '../utils/cloudinary';
 
 export default function Home() {
@@ -19,6 +19,7 @@ function VendorDashboardContent() {
   const { user, token, login, logout } = useAuthStore();
   const [authorized, setAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState('Overview');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [vendorProfile, setVendorProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -402,19 +403,33 @@ function VendorDashboardContent() {
 
   return (
     <div className="layout-app">
-      <nav className="side-nav">
+      {/* Mobile Header Bar */}
+      <div className="mobile-header">
+        <div className="mobile-header-left">
+          <button className="icon-btn" onClick={() => setIsSidebarOpen(true)}>
+            <Menu size={24} />
+          </button>
+          <img src="/logo.png" alt="NATION MARKET" className="mobile-logo" />
+          <span className="portal-badge">VENDOR PORTAL</span>
+        </div>
+      </div>
+
+      {isSidebarOpen && <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />}
+
+      <nav className={`side-nav ${isSidebarOpen ? 'open' : ''}`}>
         <div className="nav-header">
           <img src="/logo.png" alt="NATION MARKET" className="dashboard-logo" />
           <span className="portal-badge">VENDOR PORTAL</span>
+          <button className="mobile-close-btn" onClick={() => setIsSidebarOpen(false)}><X size={24} /></button>
         </div>
         <div className="scrollable-menu">
-          <button className={`nav-item ${activeTab === 'Overview' ? 'active' : ''}`} onClick={() => setActiveTab('Overview')}><TrendingUp size={20} /> Dashboard</button>
-          <button className={`nav-item ${activeTab === 'Products' ? 'active' : ''}`} onClick={() => setActiveTab('Products')}><Package size={20} /> Products Catalog</button>
-          <button className={`nav-item ${activeTab === 'Subcategories' ? 'active' : ''}`} onClick={() => setActiveTab('Subcategories')}><Layers size={20} /> Subcategories</button>
-          <button className={`nav-item ${activeTab === 'Orders' ? 'active' : ''}`} onClick={() => setActiveTab('Orders')}><ListOrdered size={20} /> Orders & Fulfillment</button>
-          <button className={`nav-item ${activeTab === 'Payments' ? 'active' : ''}`} onClick={() => setActiveTab('Payments')}><DollarSign size={20} /> Earnings & Payouts</button>
-          <button className={`nav-item ${activeTab === 'StoreFront' ? 'active' : ''}`} onClick={() => setActiveTab('StoreFront')}><Store size={20} /> Store Settings</button>
-          <button className={`nav-item ${activeTab === 'Security Settings' ? 'active' : ''}`} onClick={() => setActiveTab('Security Settings')}><Settings size={20} /> Security & 2FA</button>
+          <button className={`nav-item ${activeTab === 'Overview' ? 'active' : ''}`} onClick={() => { setActiveTab('Overview'); setIsSidebarOpen(false); }}><TrendingUp size={20} /> Dashboard</button>
+          <button className={`nav-item ${activeTab === 'Products' ? 'active' : ''}`} onClick={() => { setActiveTab('Products'); setIsSidebarOpen(false); }}><Package size={20} /> Products Catalog</button>
+          <button className={`nav-item ${activeTab === 'Subcategories' ? 'active' : ''}`} onClick={() => { setActiveTab('Subcategories'); setIsSidebarOpen(false); }}><Layers size={20} /> Subcategories</button>
+          <button className={`nav-item ${activeTab === 'Orders' ? 'active' : ''}`} onClick={() => { setActiveTab('Orders'); setIsSidebarOpen(false); }}><ListOrdered size={20} /> Orders & Fulfillment</button>
+          <button className={`nav-item ${activeTab === 'Payments' ? 'active' : ''}`} onClick={() => { setActiveTab('Payments'); setIsSidebarOpen(false); }}><DollarSign size={20} /> Earnings & Payouts</button>
+          <button className={`nav-item ${activeTab === 'StoreFront' ? 'active' : ''}`} onClick={() => { setActiveTab('StoreFront'); setIsSidebarOpen(false); }}><Store size={20} /> Store Settings</button>
+          <button className={`nav-item ${activeTab === 'Security Settings' ? 'active' : ''}`} onClick={() => { setActiveTab('Security Settings'); setIsSidebarOpen(false); }}><Settings size={20} /> Security & 2FA</button>
         </div>
         <div className="nav-footer">
           <button className="logout-button" onClick={logout}><LogOut size={20} /> Logout</button>
@@ -1168,11 +1183,24 @@ function VendorDashboardContent() {
 
       {/* KEEP STYLES FROM ORIGINAL PLUS MINOR ADDITIONS */}
       <style>{`
-        .layout-app { display: flex; min-height: 100vh; background: #f9fafb; font-family: -apple-system, sans-serif; }
-        .side-nav { width: 280px; background: white; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; }
-        .nav-header { padding: 1.5rem; border-bottom: 1px solid #e5e7eb; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+        /* Core Reset & Layout */
+        .layout-app { display: flex; min-height: 100vh; background: #f9fafb; font-family: -apple-system, sans-serif; position: relative; }
+        
+        /* Mobile Header */
+        .mobile-header { display: none; background: white; padding: 1rem; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 40; justify-content: space-between; align-items: center; width: 100%; }
+        .mobile-header-left { display: flex; align-items: center; gap: 0.5rem; }
+        .mobile-logo { height: 40px; width: auto; object-fit: contain; }
+        .icon-btn { background: none; border: none; cursor: pointer; color: #374151; padding: 0.25rem; }
+        
+        /* Sidebar Overlay */
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 45; }
+
+        /* Sidebar Nav */
+        .side-nav { width: 280px; background: white; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; position: fixed; height: 100vh; left: 0; top: 0; z-index: 50; transition: transform 0.3s ease; }
+        .nav-header { padding: 1.5rem; border-bottom: 1px solid #e5e7eb; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; position: relative; }
         .dashboard-logo { height: 90px; object-fit: contain; margin: -20px 0; }
         .portal-badge { background: #005b9f; color: white; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.5px; }
+        .mobile-close-btn { display: none; background: none; border: none; cursor: pointer; color: #6b7280; position: absolute; right: 1rem; top: 1rem; }
         
         .scrollable-menu { flex: 1; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; }
         .nav-item { display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; color: #4b5563; text-decoration: none; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-size: 0.95rem; }
@@ -1183,9 +1211,10 @@ function VendorDashboardContent() {
         .logout-button { display: flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; padding: 0.85rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .logout-button:hover { background: #fee2e2; }
 
-        .main-zone { flex: 1; padding: 2.5rem 3rem; overflow-y: auto; }
+        /* Main Content */
+        .main-zone { margin-left: 280px; flex: 1; padding: 2.5rem 3rem; overflow-x: hidden; display: flex; flex-direction: column; min-width: 0; box-sizing: border-box; }
         
-        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
         .top-header h1 { font-size: 2rem; margin: 0 0 0.25rem 0; color: #111827; font-weight: 800; letter-spacing: -0.5px; }
         .subtitle { margin: 0; color: #6b7280; font-size: 1.05rem; }
         
@@ -1209,8 +1238,9 @@ function VendorDashboardContent() {
         .flex { display: flex; } .justify-between { justify-content: space-between; } .items-center { align-items: center; }
         .mb-3 { margin-bottom: 1rem; } .mb-2 { margin-bottom: 0.75rem; } .mt-4 { margin-top: 2rem; } .mt-2 { margin-top: 1rem; } .mt-1 { margin-top: 0.5rem; } .pb-1 { padding-bottom: 0.75rem; }
         
-        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: white; }
-        .data-table th { background: #f9fafb; padding: 1rem; text-align: left; font-size: 0.85rem; font-weight: 700; color: #4b5563; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; }
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid #e5e7eb; border-radius: 8px; background: white; }
+        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 600px; }
+        .data-table th { background: #f9fafb; padding: 1rem; text-align: left; font-size: 0.85rem; font-weight: 700; color: #4b5563; text-transform: uppercase; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
         .data-table td { padding: 1rem; border-bottom: 1px solid #e5e7eb; color: #111827; font-size: 0.95rem; }
         .table-empty { text-align: center !important; color: #6b7280 !important; padding: 3rem 1rem !important; font-weight: 500; }
 
@@ -1255,7 +1285,28 @@ function VendorDashboardContent() {
         .font-bold { font-weight: 700; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1.5rem; }
-        .modal-content { background: white; padding: 2.5rem; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        .modal-content { background: white; padding: 2rem; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto; }
+        
+        /* ── Responsive Architecture ── */
+        @media (max-width: 1024px) {
+          .layout-app { flex-direction: column; }
+          .mobile-header { display: flex; }
+          .sidebar-overlay { display: block; }
+          .side-nav { transform: translateX(-100%); }
+          .side-nav.open { transform: translateX(0); }
+          .main-zone { margin-left: 0; padding: 1.5rem 1rem; }
+          .mobile-close-btn { display: block; }
+          .metrics-grid { grid-template-columns: 1fr; gap: 1rem; }
+          .settings-grid { grid-template-columns: 1fr; }
+          .top-header h1 { font-size: 1.5rem; }
+          .store-status-box { width: 100%; justify-content: center; }
+        }
+        @media (max-width: 768px) {
+          .metrics-grid { grid-template-columns: 1fr; }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+        }
       `}</style>
     </div>
   );

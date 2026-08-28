@@ -465,9 +465,20 @@ export default function VendorRegister() {
         .go-back-btn:hover { color: #004d40; text-decoration: underline; }
 
         @media (max-width: 900px) {
-          .step-header { padding: 1rem 1.5rem; flex-direction: column; gap: 0.5rem; }
+          .step-header { padding: 1rem; flex-direction: column; gap: 0.5rem; align-items: center; }
+          .brand { margin: 0; justify-content: center; height: 80px; }
+          .nav-logo { height: 260px; }
+          .step-content { padding: 1rem; }
+          .step-content h1 { font-size: 1.5rem; margin-bottom: 2rem; }
           .step-content-form { padding: 0 1rem; }
-          .form-wrapper { padding: 1.5rem; }
+          .form-wrapper { padding: 1.5rem; margin-top: 0; }
+          .form-row { grid-template-columns: 1fr; }
+          .phone-prefix-select { width: 100px !important; }
+        }
+        @media (max-width: 480px) {
+          .business-cards { grid-template-columns: 1fr; }
+          .biz-card { padding: 1.5rem 1.25rem; }
+          .biz-card p { margin-bottom: 3.5rem; }
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
