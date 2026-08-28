@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '../store/authStore';
 import {
@@ -49,13 +49,15 @@ function AdminDashboardContent() {
   const [otpToken, setOtpToken] = useState('');
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
+  const hasFetched = useRef(false);
+
   useEffect(() => {
     setIsMounted(true);
     const urlToken = searchParams.get('token');
     const urlRole = searchParams.get('role');
     
     // First, process new login from URL if present
-    if (urlToken && urlRole && urlRole === 'ADMIN') {
+    if (urlToken && urlRole === 'ADMIN') {
       if (token !== urlToken) {
         login(urlToken, urlRole);
         router.replace('/');
@@ -68,12 +70,15 @@ function AdminDashboardContent() {
       window.location.href = 'https://nationmarket.eghedev.com/login';
     } else {
       setAuthorized(true);
-      // Only fetch once
-      if (!stats && loading) {
-        fetchAdminData();
-      }
     }
-  }, [searchParams, token, user, login, router, stats, loading]);
+  }, [searchParams, token, user, login, router]);
+
+  useEffect(() => {
+    if (authorized && !hasFetched.current) {
+      hasFetched.current = true;
+      fetchAdminData();
+    }
+  }, [authorized]);
 
   const fetchAdminData = async () => {
     try {
