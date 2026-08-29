@@ -12,7 +12,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
     setStatusMsg('');
     try {
-      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !((process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').replace(/\/api\/?$/, '')).includes('localhost') ? ((process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').replace(/\/api\/?$/, '')) : 'https://api.eghedev.com') + '/api/auth/forgot-password', {
+      const res = await fetch((process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL.replace(/:\d+$/, '').replace(/^http:\/\//i, 'https://') : 'https://api.eghedev.com').replace(/\/api\/?$/, '')).includes('localhost') ? ((process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL.replace(/:\d+$/, '').replace(/^http:\/\//i, 'https://') : 'https://api.eghedev.com').replace(/\/api\/?$/, '')) : 'https://api.eghedev.com') + '/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

@@ -23,7 +23,7 @@ function CheckoutSuccessContent() {
       }
 
       try {
-        const API_URL = ((process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').replace(/\/api\/?$/, ''));
+        const API_URL = ((process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL.replace(/:\d+$/, '').replace(/^http:\/\//i, 'https://') : 'https://api.eghedev.com').replace(/\/api\/?$/, ''));
 
         // First verify payment status
         if (reference) {

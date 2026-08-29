@@ -5,7 +5,7 @@ import { useCartStore } from '../../../store/cartStore';
 import { useAuthStore } from '../../../store/authStore';
 import { useLocationStore } from '../../../store/locationStore';
 
-const API = ((process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').replace(/\/api\/?$/, ''));
+const API = ((process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL.replace(/:\d+$/, '').replace(/^http:\/\//i, 'https://') : 'https://api.eghedev.com').replace(/\/api\/?$/, ''));
 
 interface Subcategory { id: string; name: string; slug: string; image?: string; }
 interface Category { id: string; name: string; slug: string; subcategories: Subcategory[]; }

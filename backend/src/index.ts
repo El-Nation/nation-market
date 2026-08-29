@@ -40,14 +40,9 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Allow no origin
-    
-    // Auto-allow all eghedev.com subdomains and localhost
-    if (origin.includes('eghedev.com') || origin.includes('localhost') || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS policy violation: ' + origin), false);
-    }
+    if (!origin) return callback(null, true);
+    // Bulletproof reflection for all origins to prevent CORS Network Errors
+    callback(null, origin);
   },
   credentials: true
 }));
