@@ -52,7 +52,11 @@ export default function MarketplacePage() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const API = (process.env.NEXT_PUBLIC_API_URL && !((process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').replace(/\/api\/?$/, '')).includes('localhost') ? ((process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes('localhost') ? process.env.NEXT_PUBLIC_API_URL : 'https://api.eghedev.com').replace(/\/api\/?$/, '')) : 'https://api.eghedev.com').replace(/\/+$/, '') + '/api/storefront';
+  const rawEnv = process.env.NEXT_PUBLIC_API_URL;
+  let API = 'https://api.eghedev.com/api/storefront';
+  if (rawEnv && typeof rawEnv === 'string' && !rawEnv.includes('localhost')) {
+    API = rawEnv.replace(/\/api\/?$/, '').replace(/\/+$/, '') + '/api/storefront';
+  }
 
   useEffect(() => {
     setIsMounted(true);
