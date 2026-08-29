@@ -540,6 +540,11 @@ export default function MarketplacePage() {
         </div>
       </header>
 
+      {/* FORENSIC CACHE-BUSTING CANARY. IF THE USER DOES NOT SEE THIS ON THE LIVE SITE, HOSTINGER HAS NOT DEPLOYED MY CHANGES! */}
+      <div style={{ background: '#ef4444', color: '#fff', textAlign: 'center', padding: '1rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '1.2rem', zIndex: 9999, position: 'relative' }}>
+        BUILD VERSION: V_9882X
+      </div>
+
       {/* ── HERO BANNER (Chowdeck Style) ── */}
       <div className="cd-hero-banner">
         <div className="cd-hero-card">
