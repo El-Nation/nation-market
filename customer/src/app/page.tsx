@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useLocationStore } from '../store/locationStore';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface Subcategory { id: string; name: string; slug: string; }
 interface Category { id: string; name: string; slug: string; subcategories: Subcategory[]; }
@@ -479,13 +480,13 @@ export default function MarketplacePage() {
 
           {/* Action Buttons: Filter | Cart | Sign Up */}
           <div className="cd-header-actions">
-            <button className="cd-filter-btn" onClick={() => router.push('/categories')} title="Browse all categories">
+            <Link href="/categories" className="cd-filter-btn" title="Browse all categories" style={{ textDecoration: 'none' }}>
               🎛️ Filter
-            </button>
-            <button className="cd-cart-btn" onClick={() => router.push('/cart')} title="View cart">
+            </Link>
+            <Link href="/cart" className="cd-cart-btn" title="View cart" style={{ textDecoration: 'none' }}>
               🛒 Cart
               {cartCount > 0 && <span className="cd-cart-badge">{cartCount}</span>}
-            </button>
+            </Link>
             {/* Sign Up / Account — routes to existing auth form, never duplicates it */}
             {isMounted && user ? (
               <button
@@ -496,13 +497,14 @@ export default function MarketplacePage() {
                 👤 <span>Account</span>
               </button>
             ) : (
-              <button
+              <Link
+                href="/login"
                 className="cd-signup-btn"
-                onClick={() => window.location.href = '/login'}
                 title="Sign up or log in"
+                style={{ textDecoration: 'none' }}
               >
                 ✨ <span>Sign Up</span>
-              </button>
+              </Link>
             )}
           </div>
         </div>
@@ -510,26 +512,26 @@ export default function MarketplacePage() {
         {/* ══ ROW 2: NAVIGATION DOCK — clearly separated below Row 1 ══ */}
         <div className="cd-nav-dock-bar">
           <nav className="cd-nav-dock">
-            <button className="cd-dock-item active" onClick={() => router.push('/')}>
+            <Link href="/" className="cd-dock-item active">
               🏠 <span>Home</span>
-            </button>
-            <button className="cd-dock-item" onClick={focusSearch}>
+            </Link>
+            <button className="cd-dock-item" onClick={focusSearch} style={{ WebkitAppearance: 'none' }}>
               🔍 <span>Search</span>
             </button>
-            <button className="cd-dock-item" onClick={() => router.push('/cart')} style={{ position: 'relative' }}>
+            <Link href="/cart" className="cd-dock-item" style={{ position: 'relative' }}>
               🛒 <span>Cart</span>
               {totalItems() > 0 && (
                 <div style={{ position: 'absolute', top: '2px', right: '15px', background: '#fbbf24', color: '#111', fontSize: '0.65rem', fontWeight: 800, height: '18px', minWidth: '18px', padding: '0 4px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {totalItems()}
                 </div>
               )}
-            </button>
-            <button className="cd-dock-item" onClick={() => setSupportModalOpen(true)}>
+            </Link>
+            <a href="mailto:support@nationmarket.eghedev.com" className="cd-dock-item">
               🎧 <span>Support</span>
-            </button>
-            <button className="cd-dock-item" onClick={() => setProfileModalOpen(true)}>
+            </a>
+            <Link href="/dashboard" className="cd-dock-item">
               👤 <span>Profile</span>
-            </button>
+            </Link>
           </nav>
         </div>
       </header>
